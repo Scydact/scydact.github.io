@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data to Pulse</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+            background: #222;
+            color: #ddd;
+        }
+
+        textarea {
+            background: black;
+            color: white;
+            width: 80%;
+            height: 20em;
+            font-size: large;
+            padding: 1em;
+        }
+    </style>
+</head>
+
+<body>
+    <!--
+REFERENCIA PARA PWL:
+
+Unidades absolutas:
+PWL(0 0 100m 10 200m 10 300m 0)
+
+Unidades relativas:
+PWL(0 0 +100m 10 +100m 10 +100m 0)
+
+Separacion por par:
+PWL(0 0) (+100m 10) (+100m 10) (+100m 0)
+
+Repeats:
+PWL repeat for 5((0 0) (+100m 10) (+100m 10) (+100m 0)) endrepeat
+PWL repeat forever((0 0) (+100m 10) (+100m 10) (+100m 0)) endrepeat
+
+File (formato csv o tsv)
+PWL repeat for 5(FILE=pwl_file.txt) endrepeat
+
+Trigger:
+PWL (0 0 .5 1 1 0) TRIGGER V(node)>1
+
+Scaling:
+PWL TIME_SCALE_FACTOR=0.5 VALUE_SCALE_FACTOR=2 (0 0 .5 1 1 0)
+    -->
+    <h1>Generador de PWL con Data para LTspice</h1>
+    <div>
+        <h2>Data</h2>
+        <textarea id=data onchange="onInputChange()"></textarea>
+    </div>
+    <div>
+        <h2>Opciones</h2>
+        <label>Cantidad de Lineas a generar: </label>
+        <input id=iRandLines type="number" min=0 step=1 value=0>
+        <br>
+        <button onclick="randomizeInput()">Generar data aleatorea</button>
+        <br>
+        <label>Velocidad de bits (bps): </label>
+        <input id=iBps type="number" min=0 onchange="onInputChange()" value=1>
+        <br>
+        <label>Reducir puntos de PWL: </label>
+        <input id=compressPoints type="checkbox" onchange="onInputChange()" checked=true>
+        <br>
+        <label>Valor 0: </label>
+        <input id=val0 type="number" onchange="onInputChange()" value=0>
+        <br>
+        <label>Valor 1: </label>
+        <input id=val1 type="number" onchange="onInputChange()" value=1>
+    </div>
+    <div>
+        <h2>Output</h2>
+        <p>Click en el cuadro de texto para copiar...</p>
+        <textarea id=out readonly onclick="copyToClip(this.value)"></textarea>
+    </div>
+
+    <script>
+        let dataNode = document.getElementById('data');
+        let outNode = document.getElementById('out');
+        let genLinesNode = document.getElementById('iRandLines');
+        let bpsNode = document.getElementById('iBps');
+        let compressPointsNode = document.getElementById('compressPoints');
+        let val0Node = document.getElementById('val0');
+        let val1Node = document.getElementById('val1');
+
+        if (dataNode.value === '') randomizeInput();
+
+        function onInputChange() {
+            dataNode.value = trimData(dataNode.value);
+            let data = generatePointPairs(parseData(dataNode.value));
+            let bpsParsed = parseFloat(bpsNode.value)
+            let timeScale = (bpsParsed === 0) ? 1 : 1 / bpsParsed;
+            outNode.value = generateOutStr(data, timeScale);
+        }
+        /** Removes invalid characters from the string.*/
+        function trimData(str) {
+            let charset = str.split('');
+            let validChars = ['0', '1', ' ', '\n', '\t'];
+
+            let filtered = charset.filter((x) => validChars.includes(x));
+            return filtered.join('');
+        }
+        /** Converts a string to binary list. */
+        function parseData(str) {
+            let charset = str.split('');
+            let out = [];
+            charset.forEach((x) => {
+                if (x == '0') out.push(0);
+                else if (x == '1') out.push(1);
+            })
+            return out;
+        }
+        /** Generates output string */
+        function generatePointPairs(data) {
+            let l = data.length;
+            if (l < 1) return '';
+            let pairs = [];
+            let almostNone = 1e-6;
+
+            let vals = [
+                parseFloat(val0Node.value),
+                parseFloat(val1Node.value),
+            ]
+
+            // Add first bit, to avoid a saw on every repeat.
+            pairs.push(`(0 ${data[0]})`);
+
+            if (!compressPointsNode.checked) {
+                // Uncompressed
+                for (let i = 0; i < l; i++) {
+                    pairs.push(`(${i+almostNone} ${vals[data[i]]})`);
+                    pairs.push(`(${i+1} ${vals[data[i]]})`);
+                }
+            } else {
+                // Check last bit
+                let lastBit = data[0];
+                pairs.push(`(${almostNone} ${lastBit})`); // first number;
+                let i = 0;
+                while (i < l) {
+                    const curr = data[i];
+                    if (lastBit != curr) {
+                        pairs.push(`(${i} ${vals[lastBit]})`);
+                        pairs.push(`(${i+almostNone} ${vals[curr]})`);
+                        lastBit = curr;
+                    }
+                    i++;
+                }
+                pairs.push(`(${i} ${vals[lastBit]})`); // last number;
+            }
+
+            return pairs.join('');
+        }
+        function generateOutStr(pointsStr, timeScale = 1, valueScale = 1) {
+            let ts = (timeScale == 1) ? '' : ` TIME_SCALE_FACTOR=${timeScale}`;
+            let vs = (valueScale == 1) ? '' : ` VALUE_SCALE_FACTOR=${valueScale}`;
+            return `PWL${ts}${vs} repeat forever (${pointsStr}) endrepeat`;
+        }
+        function randomizeInput() {
+            let randomBinary = () => Math.round(Math.random());
+            let randomInt = (max = Number.MAX_SAFE_INTEGER, min = 0) =>
+                Math.floor(Math.random() * max) + Math.floor(min);
+
+            let data = [];
+            let n = parseFloat(genLinesNode.value);
+            if (!n || n === NaN) n = randomInt(16, 1);
+
+            for (let i = n; i; i--) {
+                let line = [];
+                for (let j = 8; j; j--) {
+                    line.push(randomBinary().toString());
+                }
+                data.push(line.join(''));
+            }
+            dataNode.value = data.join('\n');
+            onInputChange();
+        }
+        function copyToClip(str) {
+            navigator.clipboard.writeText(str);
+        }
+    </script>
+</body>
+
+</html>
