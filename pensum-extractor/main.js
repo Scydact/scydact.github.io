@@ -150,16 +150,54 @@ function createNewPensumTable(data) {
                 a.classList.add("cuatHeader");
             }
 
-            row.insertCell().innerText = mat.codigo;
+            {
+                let r = row.insertCell();
+                r.innerText = mat.codigo;
+                r.id = `a_${mat.codigo}`;
+                row.id = `r_${mat.codigo}`;
+            }
             row.insertCell().innerText = mat.asignatura;
             {
                 let r = row.insertCell();
                 r.innerText = mat.creditos;
                 r.classList.add("text-center");
             }
-            row.insertCell().innerText = `${[mat.prereq, mat.prereqExtra]
-                .flat()
-                .join(", ")}`;
+            {
+                let r = row.insertCell();
+
+                mat.prereq.forEach((x) => {
+                    let s = document.createElement("a");
+                    s.innerText = x;
+                    s.addEventListener("click", () => {
+                        let targetCell = document.getElementById(`a_${x}`);
+                        let targetRow = document.getElementById(`r_${x}`);
+                        targetCell.scrollIntoView({
+                            block: "center",
+                        });
+                        targetRow.classList.remove("highlightRow");
+                        targetRow.classList.add("highlightRow");
+                        setTimeout(
+                            () => targetRow.classList.remove("highlightRow"),
+                            2e3
+                        );
+                    });
+                    s.classList.add("preReq");
+
+                    r.appendChild(s);
+                });
+
+                mat.prereqExtra.forEach((x) => {
+                    let s = document.createElement("a");
+                    s.innerText = x;
+                    s.classList.add("preReq");
+                    s.classList.add("preReqExtra");
+
+                    r.appendChild(s);
+                });
+            }
+            // row.insertCell().innerText = `${[mat.prereq, mat.prereqExtra]
+            //     .flat()
+            //     .join(", ")}`;
         });
     });
 
@@ -203,21 +241,29 @@ async function fetchHtmlAsText(
             opts.signal = signal;
 
             var timeoutId = setTimeout(() => controller.abort(), 5e3);
-            var sendDate = (new Date()).getTime();
+            var sendDate = new Date().getTime();
 
             var response = await fetch(currProxy + url, opts);
             if (response.ok) {
-                var recieveDate = (new Date()).getTime();
-                console.info(`CORS proxy '${currProxy}' succeeded in ${recieveDate - sendDate}ms."`)
+                var recieveDate = new Date().getTime();
+                console.info(
+                    `CORS proxy '${currProxy}' succeeded in ${
+                        recieveDate - sendDate
+                    }ms."`
+                );
                 return await response.text();
             } else {
                 throw response;
             }
         } catch (err) {
-            var recieveDate = (new Date()).getTime();
-            console.warn(`CORS proxy '${currProxy}' failed in ${recieveDate - sendDate}ms."`);
+            var recieveDate = new Date().getTime();
+            console.warn(
+                `CORS proxy '${currProxy}' failed in ${
+                    recieveDate - sendDate
+                }ms."`
+            );
             console.warn(err);
-            console.warn(await err.text())
+            console.warn(await err.text());
             ++i;
         }
     }

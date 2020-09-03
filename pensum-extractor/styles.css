@@ -4,8 +4,9 @@
     box-sizing: border-box;
 }
 
-body {
+html {
     font-family: 'Open Sans', sans-serif;
+    scroll-behavior: smooth;
 }
 
 thead th {
@@ -19,6 +20,10 @@ thead th {
 
 table {
     border-collapse: collapse;
+}
+
+td {
+    height: 2rem;
 }
 
 tr:nth-child(2n) td:not(.cuatHeader) {
@@ -37,12 +42,33 @@ tr:nth-child(2n) td:not(.cuatHeader) {
     writing-mode: vertical-lr;
 }
 
-.cuatHeader {
-    /* max-width: 3rem; */
-    /* transform: rotate(-90deg) translate(-150%,0%);
-    transform-origin: 50% 50%;
-    white-space: nowrap;
-    overflow: visible;
-    max-width: 2rem;
-    writing-mode: vertical-lr; */
+@keyframes highlight {
+    0% {
+        background: #ffff99;
+    }
+    100% {
+        background: none;
+    }
+}
+
+.highlightRow td {
+    animation: highlight 2s;
+}
+
+.preReq {
+    margin: 0 0.1rem;
+    padding: 0rem .5rem;
+    border-radius: .3rem;
+    background: rgb(167, 168, 255);
+    cursor: pointer;
+    display: inline-block;
+}
+
+.preReq:hover {
+    background: rgb(106, 109, 253);
+}
+
+.preReqExtra, .preReqExtra:hover {
+    background: rgb(130, 219, 160);
+    cursor: default;
 }
