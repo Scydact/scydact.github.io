@@ -1,0 +1,44 @@
+@import url(https://fonts.googleapis.com/css?family=Open+Sans);
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Open Sans', sans-serif;
+}
+
+thead th {
+    background: white;
+    position  : sticky;
+    top       : 0;
+    height: 2rem;
+    box-shadow: 0 2px 0px 0px black;
+    z-index: 1;
+}
+
+table {
+    border-collapse: collapse;
+}
+
+tr:nth-child(2n) td:not(.cuatHeader) {
+    background: rgba(60, 60, 196, 0.2);
+}
+
+.cuatLimit td, .cuatHeader {
+    border-top: 1px solid black;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.cuatHeader {
+    /* max-width: 3rem; */
+    /* transform: rotate(-90deg) translate(-150%,0%);
+    transform-origin: 50% 50%;
+    white-space: nowrap;
+    overflow: visible;
+    max-width: 2rem;
+    writing-mode: vertical-lr; */
+}
