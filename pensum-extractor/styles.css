@@ -33,6 +33,10 @@ tr:nth-child(2n) td:not(.cuatHeader) {
     text-align: center;
 }
 
+.vertical-text {
+    writing-mode: vertical-lr;
+}
+
 .cuatHeader {
     /* max-width: 3rem; */
     /* transform: rotate(-90deg) translate(-150%,0%);

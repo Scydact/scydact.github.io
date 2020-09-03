@@ -1,11 +1,10 @@
 var unapecCode = "https://servicios.unapec.edu.do/pensum/Main/Detalles/";
-var corsOverride = "https://cors-anywhere.herokuapp.com/";
 
 /** Loads the node given at 'input' into the DOM */
 async function fetchPensumTable() {
     const contentDiv = document.getElementById("tempFrame");
     var code = document.getElementById("codigoMateria").value;
-    var urlToLoad = corsOverride + unapecCode + code;
+    var urlToLoad = unapecCode + code;
     contentDiv.innerHTML = "Cargando...";
     contentDiv.innerHTML = await fetchHtmlAsText(urlToLoad);
     return contentDiv;
@@ -98,13 +97,13 @@ function matsToDict(arr) {
 
 /**
  * Recreates the pensumData, as a new formatted table.
- * Cols: 
+ * Cols:
  *  - CUAT indicator
  *  - Codigo
  *  - Nombre
  *  - Creds
  *  - Prereq
- * @param {*} data 
+ * @param {*} data
  */
 function createNewPensumTable(data) {
     let oxxxut = {
@@ -119,32 +118,36 @@ function createNewPensumTable(data) {
                 creditos: 0,
                 prereq: [],
                 prereqExtra: [],
-            }
+            },
         ],
     };
 
     /** @type {HTMLTableElement} */
-    let out = document.createElement('table');
+    let out = document.createElement("table");
 
     // create the header
     let headerRow = out.createTHead();
-    ['Ct','Codigo','Asignatura','Creditos','Pre-requisitos'].forEach((x) => {
-        let a = document.createElement('th');
-        a.innerText = x;
-        headerRow.appendChild(a);
-    })
+    ["Ct", "Codigo", "Asignatura", "Creditos", "Pre-requisitos"].forEach(
+        (x) => {
+            let a = document.createElement("th");
+            a.innerText = x;
+            headerRow.appendChild(a);
+        }
+    );
 
     // create the contents
     data.cuats.forEach((cuat, idxCuat) => {
         cuat.forEach((mat, idxMat, currentCuat) => {
             let row = out.insertRow();
             if (idxMat === 0) {
-                let a = document.createElement('th');
+                let a = document.createElement("th");
                 row.appendChild(a);
                 a.rowSpan = currentCuat.length;
-                a.innerText = `#${idxCuat+1}`;
-                row.classList.add('cuatLimit');
-                a.classList.add('cuatHeader');
+                a.innerHTML = `<p class='vertical-text'>Cuat. ${
+                    idxCuat + 1
+                }</p>`;
+                row.classList.add("cuatLimit");
+                a.classList.add("cuatHeader");
             }
 
             row.insertCell().innerText = mat.codigo;
@@ -152,11 +155,13 @@ function createNewPensumTable(data) {
             {
                 let r = row.insertCell();
                 r.innerText = mat.creditos;
-                r.classList.add('text-center');
+                r.classList.add("text-center");
             }
-            row.insertCell().innerText = `${[mat.prereq,mat.prereqExtra].flat().join(', ')}`;
-        }) 
-    })
+            row.insertCell().innerText = `${[mat.prereq, mat.prereqExtra]
+                .flat()
+                .join(", ")}`;
+        });
+    });
 
     return out;
 }
@@ -164,11 +169,59 @@ function createNewPensumTable(data) {
 //#region Helper functions
 
 /**
- * @param {String} url - address for the HTML to fetch
+ *
+ * @param {String} url address for the HTML to fetch
+ * @param {String} cacheOpt cache policy, defaults to force-cache,
+ * but if cache must be reloaded, do 'relaod'.
+ *
+ * Reference: https://developer.mozilla.org/en-US/docs/Web/API/Request/cache
  * @return {String} the resulting HTML string fragment
  */
-async function fetchHtmlAsText(url) {
-    return await (await fetch(url)).text();
+async function fetchHtmlAsText(
+    url,
+    cacheOpt = "force-cache" /*'force-cache'*/
+) {
+    const corsOverride = [
+        "https://api.allorigins.win/raw?url=",
+        "https://yacdn.org/serve/",
+        "https://cors-anywhere.herokuapp.com/", // has request limit (200 per hour)
+        "https://cors-proxy.htmldriven.com/?url=", // Fails with CORS (what!?)
+        "https://thingproxy.freeboard.io/fetch/", // problems with https requests
+        "http://www.whateverorigin.org/get?url=", // problems with https requests, deprecated?
+    ];
+
+    let i = 0;
+    while (i < corsOverride.length) {
+        var currProxy = corsOverride[i];
+        try {
+            var opts = {
+                cache: cacheOpt,
+                signal: null,
+            };
+            var controller = new AbortController();
+            var signal = controller.signal;
+            opts.signal = signal;
+
+            var timeoutId = setTimeout(() => controller.abort(), 5e3);
+            var sendDate = (new Date()).getTime();
+
+            var response = await fetch(currProxy + url, opts);
+            if (response.ok) {
+                var recieveDate = (new Date()).getTime();
+                console.info(`CORS proxy '${currProxy}' succeeded in ${recieveDate - sendDate}ms."`)
+                return await response.text();
+            } else {
+                throw response;
+            }
+        } catch (err) {
+            var recieveDate = (new Date()).getTime();
+            console.warn(`CORS proxy '${currProxy}' failed in ${recieveDate - sendDate}ms."`);
+            console.warn(err);
+            console.warn(await err.text())
+            ++i;
+        }
+    }
+    return null;
 }
 
 //#endregion
@@ -186,9 +239,9 @@ async function loadPensum() {
         window.a = pData;
         window.b = matsToDict(window.a.cuats.flat());
         var wrapper = document.getElementById("tempFrame");
-        wrapper.innerHTML = '';
+        wrapper.innerHTML = "";
         {
-            let h = document.createElement('h1');
+            let h = document.createElement("h1");
             h.innerText = pData.carrera;
             wrapper.appendChild(h);
         }
@@ -200,18 +253,22 @@ async function onWindowLoad() {
     //mFrame.addEventListener('load',(e)=>console.log('loaded'));
     try {
         let carr = await (await fetch("carreras.json")).json();
-        let input = document.getElementById('codigoMateria');
+        let input = document.getElementById("codigoMateria");
 
-        let list = carr.carreras.map((x) => [`(${x.codigo}) ${x.nombre}`,x.codigo])
+        let list = carr.carreras.map((x) => [
+            `(${x.codigo}) ${x.nombre}`,
+            x.codigo,
+        ]);
 
         // from awesomplete.min.js
         new Awesomplete(input, {
             minChars: 0,
             list: list,
         });
-
     } catch {
-        console.warn('carreras.json could not be loaded.\n Search autocomplete will not be available.')
+        console.warn(
+            "carreras.json could not be loaded.\n Search autocomplete will not be available."
+        );
     }
 
     // associate input with Enter.
