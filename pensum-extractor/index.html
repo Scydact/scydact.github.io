@@ -16,11 +16,17 @@
 </head>
 
 <body>
-    <h1>Extractor de pensum de UNAPEC</h1>
-    <input type="text" name="codigoMateria" id="codigoMateria" value='IEL7'>
-    <input type="button" value="Cargar" onclick="loadPensum()">
-    <br>
-    <object id='tempFrame'></object>
+    <div class='card'>
+        <h2>Seleccion de pensum</h2>
+        <label for="codigoMateria">Codigo de la carrera: </label>
+        <input type="text" name="codigoMateria" id="codigoMateria" value=''>
+        <input type="button" value="Cargar" onclick="loadPensum()">
+        <br>
+    </div>
+    <div id='infoWrapper' class="card"></div>
+    <div class="card">
+        <object id='tempFrame'></object>
+    </div>
 
 </body>
 

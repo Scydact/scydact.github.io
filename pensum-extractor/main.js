@@ -1,4 +1,5 @@
 var unapecCode = "https://servicios.unapec.edu.do/pensum/Main/Detalles/";
+var pensumLocalData = null;
 
 /** Loads the node given at 'input' into the DOM */
 async function fetchPensumTable() {
@@ -106,21 +107,22 @@ function matsToDict(arr) {
  * @param {*} data
  */
 function createNewPensumTable(data) {
-    let oxxxut = {
-        carrera: "",
-        codigo: "",
-        vigencia: "",
-        infoCarrera: [],
-        cuats: [
-            {
-                codigo: "",
-                asignatura: "",
-                creditos: 0,
-                prereq: [],
-                prereqExtra: [],
-            },
-        ],
-    };
+    // Just for reference, this is the 'data' param schema.
+    // let oxxxut = {
+    //     carrera: "",
+    //     codigo: "",
+    //     vigencia: "",
+    //     infoCarrera: [],
+    //     cuats: [
+    //         {
+    //             codigo: "",
+    //             asignatura: "",
+    //             creditos: 0,
+    //             prereq: [],
+    //             prereqExtra: [],
+    //         },
+    //     ],
+    // };
 
     /** @type {HTMLTableElement} */
     let out = document.createElement("table");
@@ -155,6 +157,8 @@ function createNewPensumTable(data) {
                 r.innerText = mat.codigo;
                 r.id = `a_${mat.codigo}`;
                 row.id = `r_${mat.codigo}`;
+                r.classList.add("monospace");
+                r.classList.add("text-center");
             }
             row.insertCell().innerText = mat.asignatura;
             {
@@ -182,6 +186,7 @@ function createNewPensumTable(data) {
                         );
                     });
                     s.classList.add("preReq");
+                    s.classList.add("monospace");
 
                     r.appendChild(s);
                 });
@@ -203,6 +208,102 @@ function createNewPensumTable(data) {
 
     return out;
 }
+
+/**
+ * Creates a table that contains the pensum's:
+ *  - Total creditos
+ *  - Any extra info present on data.infoCarrera
+ * @param {*} data
+ */
+function createInfoList(data) {
+    /** @type {HTMLTableElement} */
+    let out = document.createElement("ul");
+
+    // Most pensums have this already
+    // let allMats = data.cuats.flat();
+    // let totalCreds = 0;
+    // for (let x of allMats) totalCreds += x.creditos;
+
+    // let outTextArr = [`Total de creditos: ${totalCreds}`].concat(data.infoCarrera);
+
+    // Separate the text before outputting.
+    let outTextArr = data.infoCarrera.map((x) => {
+        let splitOnFirstColon = [
+            x.substring(0, x.indexOf(": ")),
+            x.substring(x.indexOf(": ") + 2),
+        ];
+        if (splitOnFirstColon[0] == "") return { type: "simple", data: x };
+        else {
+            let splitOnDots = splitOnFirstColon[1].split(". ");
+            if (splitOnDots.length == 1)
+                return { type: "double", data: splitOnFirstColon };
+            else
+                return {
+                    type: "double_sublist",
+                    data: [splitOnFirstColon[0], splitOnDots],
+                };
+        }
+    });
+
+    // Format the text as a list
+    for (let x of outTextArr) {
+        let li = document.createElement("li");
+        switch (x.type) {
+            case "simple":
+                li.innerText = x.data;
+                break;
+            case "double":
+                li.innerHTML = `<b>${sentenceCase(x.data[0])}:</b>\t${
+                    x.data[1]
+                }`;
+                break;
+            case "double_sublist":
+                li.innerHTML = `<b>${sentenceCase(x.data[0])}: </b>`;
+                var subul = document.createElement("ul");
+                x.data[1].forEach((elem) => {
+                    let subli = document.createElement("li");
+                    subli.innerHTML = elem + ".";
+                    subul.appendChild(subli);
+                });
+                li.appendChild(subul);
+                break;
+        }
+        out.appendChild(li);
+    }
+
+    return out;
+}
+
+//#region LocalStorage Funcs
+
+function saveToLocalStorage() {
+    let out = {
+        saveVer: 1,
+        currentCodeAtInputForm: document.getElementById('codigoMateria').value,
+    };
+
+    try {
+        localStorage.setItem("saveData", JSON.stringify(out));
+        return true;
+    } catch (err) {
+        console.warn("Could not save saveData to localStorage");
+        console.warn(err);
+        return false;
+    }
+}
+
+function loadFromLocalStorage() {
+    let saveData = localStorage.getItem("saveData");
+    if (saveData === null) return false;
+
+    let out = JSON.parse(saveData);
+
+    document.getElementById('codigoMateria').value = out.currentCodeAtInputForm;
+
+    return true;
+}
+
+//#endregion
 
 //#region Helper functions
 
@@ -270,6 +371,19 @@ async function fetchHtmlAsText(
     return null;
 }
 
+function titleCase(string) {
+    var sentence = string.toLowerCase().split(" ");
+    for (var i = 0; i < sentence.length; i++) {
+        sentence[i] = sentence[i][0].toUpperCase() + sentence[i].slice(1);
+    }
+    return sentence.join(" ");
+}
+
+function sentenceCase(string) {
+    var sentence = string.toLowerCase();
+    return sentence.charAt(0).toUpperCase() + sentence.slice(1);
+}
+
 //#endregion
 
 //#region Init
@@ -278,6 +392,7 @@ async function fetchHtmlAsText(
 async function loadPensum() {
     let pensumNode = await fetchPensumTable();
     let pData = extractPensumData(pensumNode);
+    pensumLocalData = pData;
 
     if (pData) {
         document.getElementById("codigoMateria").value = pData.codigo;
@@ -292,6 +407,15 @@ async function loadPensum() {
             wrapper.appendChild(h);
         }
         wrapper.appendChild(createNewPensumTable(pData));
+
+        var infoWrap = document.getElementById("infoWrapper");
+        infoWrap.innerHTML = "";
+        {
+            let h = document.createElement("h3");
+            h.innerText = "Detalles de la carrera: ";
+            infoWrap.appendChild(h);
+        }
+        infoWrap.appendChild(createInfoList(pData));
     }
 }
 
@@ -322,7 +446,16 @@ async function onWindowLoad() {
         if (e.key === "Enter") loadPensum();
     });
 
+    // Try to get saved data
+    loadFromLocalStorage();
+
+    // Do first load
     loadPensum();
 }
+
 window.addEventListener("load", onWindowLoad);
+
+window.addEventListener("beforeunload", (event) => {
+    saveToLocalStorage();
+});
 //#endregion

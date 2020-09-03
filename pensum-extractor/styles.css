@@ -1,4 +1,5 @@
 @import url(https://fonts.googleapis.com/css?family=Open+Sans);
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap');
 
 * {
     box-sizing: border-box;
@@ -7,6 +8,19 @@
 html {
     font-family: 'Open Sans', sans-serif;
     scroll-behavior: smooth;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.card {
+    border: 2px solid black;
+    margin: .5rem;
+    padding: 1rem;
+    border-radius: 1rem;
 }
 
 thead th {
@@ -40,6 +54,10 @@ tr:nth-child(2n) td:not(.cuatHeader) {
 
 .vertical-text {
     writing-mode: vertical-lr;
+}
+
+.monospace {
+    font-family: 'Roboto Mono', monospace;
 }
 
 @keyframes highlight {
