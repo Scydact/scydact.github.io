@@ -385,6 +385,39 @@ function sentenceCase(string) {
     return sentence.charAt(0).toUpperCase() + sentence.slice(1);
 }
 
+class DialogBox {
+    constructor() {
+        this.wrapperNode = document.createElement('div');
+        this.wrapperNode.classList.add('fullscreen');
+        this.wrapperNode.classList.add('dialogWrapper');
+
+        this.contentNode = document.createElement('div');
+        this.contentNode.classList.add('dialogCard');
+        this.wrapperNode.appendChild(this.contentNode);
+        
+        return this;
+    }
+
+    show() {
+        document.body.appendChild(this.wrapperNode);
+        return this;
+    }
+
+    hide() {
+        document.body.removeChild(this.wrapperNode);
+        return this;
+    }
+
+    createCloseButton() {
+        let a = document.createElement('a');
+        a.innerText = 'Cerrar';
+        a.addEventListener('click',() => this.hide());
+        a.classList.add('btn-primary');
+        return a;
+    }
+
+}
+
 //#endregion
 
 //#region Init
@@ -421,6 +454,7 @@ async function loadPensum() {
         {
             let a = document.createElement('a');
             a.href = unapecPensumUrl + currentCode;
+            a.target = '_blank';
             a.innerText = 'Ver pensum original.'
             infoWrap.appendChild(a);
         }

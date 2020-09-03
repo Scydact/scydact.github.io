@@ -5,6 +5,11 @@
     box-sizing: border-box;
 }
 
+:root {
+    --background: #ececec;
+    --background1: #f6f6f6;
+}
+
 html {
     font-family    : 'Open Sans', sans-serif;
     scroll-behavior: smooth;
@@ -13,19 +18,20 @@ html {
 body {
     margin        : auto;
     padding-bottom: 3rem;
+    background: var(--background);
 
     width: fit-content;
 }
 
 .card {
-    border       : 2px solid black;
+    border       : 3px solid black;
     margin       : 1rem;
     padding      : 1rem;
     border-radius: 1rem;
 }
 
 thead th {
-    background: white;
+    background: var(--background);
     position  : sticky;
     top       : 0;
     height    : 2rem;
@@ -60,6 +66,14 @@ tr:nth-child(2n) td:not(.cuatHeader) {
 
 .monospace {
     font-family: 'Roboto Mono', monospace;
+}
+
+.fullscreen {
+    position: fixed;
+    top     : 0;
+    left    : 0;
+    width   : 100%;
+    height  : 100%;
 }
 
 @keyframes highlight {
@@ -103,6 +117,37 @@ tr:nth-child(2n) td:not(.cuatHeader) {
     margin: 0;
 }
 
+.dialogWrapper {
+    display        : flex;
+    align-items    : center;
+    justify-content: center;
+    z-index        : 2;
+    background     : rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(3px);
+}
+
+.dialogCard {
+    background   : var(--background1);
+    padding      : 1rem;
+    border-radius: 1rem;
+    box-shadow   : 0 0 .5rem 0 rgba(0, 0, 0, 0.3);
+}
+
+.btn-primary {
+    display      : block;
+    padding      : .3rem .5rem;
+    margin       : 0.2rem;
+    border-radius: .25rem;
+    cursor       : pointer;
+
+    background: rgb(84, 86, 235);
+    color     : white;
+    border    : none;
+}
+
+.btn-primary:hover {
+    background: rgb(45, 47, 182);
+}
 
 @media only screen and (max-width: 1000px) {
 
