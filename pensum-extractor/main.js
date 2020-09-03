@@ -1,11 +1,12 @@
-var unapecCode = "https://servicios.unapec.edu.do/pensum/Main/Detalles/";
+var unapecPensumUrl = "https://servicios.unapec.edu.do/pensum/Main/Detalles/";
 var pensumLocalData = null;
+var currentCode = "";
 
 /** Loads the node given at 'input' into the DOM */
 async function fetchPensumTable() {
     const contentDiv = document.getElementById("tempFrame");
-    var code = document.getElementById("codigoMateria").value;
-    var urlToLoad = unapecCode + code;
+    currentCode = document.getElementById("codigoMateria").value;
+    var urlToLoad = unapecPensumUrl + currentCode;
     contentDiv.innerHTML = "Cargando...";
     contentDiv.innerHTML = await fetchHtmlAsText(urlToLoad);
     return contentDiv;
@@ -393,6 +394,9 @@ async function loadPensum() {
     let pensumNode = await fetchPensumTable();
     let pData = extractPensumData(pensumNode);
     pensumLocalData = pData;
+    
+    var infoWrap = document.getElementById("infoWrapper");
+    infoWrap.innerHTML = "";
 
     if (pData) {
         document.getElementById("codigoMateria").value = pData.codigo;
@@ -408,14 +412,18 @@ async function loadPensum() {
         }
         wrapper.appendChild(createNewPensumTable(pData));
 
-        var infoWrap = document.getElementById("infoWrapper");
-        infoWrap.innerHTML = "";
         {
             let h = document.createElement("h3");
             h.innerText = "Detalles de la carrera: ";
             infoWrap.appendChild(h);
         }
         infoWrap.appendChild(createInfoList(pData));
+        {
+            let a = document.createElement('a');
+            a.href = unapecPensumUrl + currentCode;
+            a.innerText = 'Ver pensum original.'
+            infoWrap.appendChild(a);
+        }
     }
 }
 
