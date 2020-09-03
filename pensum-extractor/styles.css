@@ -11,14 +11,15 @@ html {
 }
 
 body {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    margin: auto;
+    padding-bottom: 3rem;
+    
+    width: fit-content;
 }
 
 .card {
     border: 2px solid black;
-    margin: .5rem;
+    margin: 1rem;
     padding: 1rem;
     border-radius: 1rem;
 }
@@ -89,4 +90,42 @@ tr:nth-child(2n) td:not(.cuatHeader) {
 .preReqExtra, .preReqExtra:hover {
     background: rgb(130, 219, 160);
     cursor: default;
+}
+
+.cuatHeader {
+    max-width: 2.5rem;
+}
+
+.cuatHeader p {
+    margin: 0;
+}
+
+
+@media only screen and (max-width: 1000px) {
+
+    body {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    h1, h2, h3 {
+        text-align: center;
+    }
+
+    .card {
+        margin: 0;
+        padding: 1rem;
+        border: none;
+        border-radius: 0;
+        border-bottom: 2px solid black;
+
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .pensumWrapper {
+        padding: 0;
+    }
 }
