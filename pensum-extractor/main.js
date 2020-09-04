@@ -5,10 +5,9 @@ var currentPensumMats = {};
 var matLinks = {};
 
 /** Loads the node given at 'input' into the DOM */
-async function fetchPensumTable() {
+async function fetchPensumTable(pensumCode) {
     const contentDiv = document.getElementById("tempFrame");
-    currentPensumCode = document.getElementById("codigoMateria").value;
-    var urlToLoad = unapecPensumUrl + currentPensumCode;
+    var urlToLoad = unapecPensumUrl + pensumCode;
     contentDiv.innerHTML = "Cargando...";
     contentDiv.innerHTML = await fetchHtmlAsText(urlToLoad);
     return contentDiv;
@@ -446,7 +445,7 @@ async function fetchHtmlAsText(
             var signal = controller.signal;
             opts.signal = signal;
 
-            var timeoutId = setTimeout(() => controller.abort(), 5e3);
+            var timeoutId = setTimeout(() => controller.abort(), 3e3);
             var sendDate = new Date().getTime();
 
             var response = await fetch(currProxy + url, opts);
@@ -459,7 +458,7 @@ async function fetchHtmlAsText(
                 );
                 return await response.text();
             } else {
-                throw response;
+                throw "Timed out!";
             }
         } catch (err) {
             var recieveDate = new Date().getTime();
@@ -469,7 +468,7 @@ async function fetchHtmlAsText(
                 }ms."`
             );
             console.warn(err);
-            console.warn(await err.text());
+        } finally {
             ++i;
         }
     }
@@ -549,16 +548,28 @@ async function loadPensum() {
     var infoWrap = document.getElementById("infoWrapper");
     infoWrap.innerHTML = "";
 
-    let pensumNode = await fetchPensumTable();
-    currentPensumData = extractPensumData(pensumNode);
-    currentPensumMats = matsToDict(currentPensumData.cuats.flat());
+    currentPensumCode = document.getElementById("codigoMateria").value;
+
+    // try to check if its on localStorage, else check online and cache if successful.
+    currentPensumData = getPensumFromLocalStorage(currentPensumCode);
+    if (currentPensumData === null) {
+        let pensumNode = await fetchPensumTable(currentPensumCode);
+        currentPensumData = extractPensumData(pensumNode);
+
+        // Update cache and currentPensumCode if successfuly fetched.
+        if (currentPensumData) {
+            let newCode = currentPensumData.codigo;
+            document.getElementById("codigoMateria").value = newCode;
+            currentPensumCode = newCode;
+            setPensumToLocalStorage(currentPensumData);
+        }
+    }
 
     if (currentPensumData) {
+        currentPensumMats = matsToDict(currentPensumData.cuats.flat());
         document.getElementById("codigoMateria").value =
             currentPensumData.codigo;
 
-        window.a = currentPensumData;
-        window.b = matsToDict(window.a.cuats.flat());
         var wrapper = document.getElementById("tempFrame");
         wrapper.innerHTML = "";
         {
@@ -581,6 +592,29 @@ async function loadPensum() {
             a.innerText = "Ver pensum original.";
             infoWrap.appendChild(a);
         }
+    } else {
+        infoWrap.innerText = 'No se ha encontrado el pensum!'
+    }
+}
+
+function setPensumToLocalStorage(data) {
+    try {
+        let code = 'cache_' + data.codigo;
+        let json = JSON.stringify(data);
+        window.localStorage.setItem(code, json);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+function getPensumFromLocalStorage(matCode) {
+    try {
+        let code = 'cache_' + matCode;
+        let json = window.localStorage.getItem(code);
+        return JSON.parse(json);
+    } catch {
+        return null;
     }
 }
 
