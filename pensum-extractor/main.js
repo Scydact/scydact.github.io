@@ -548,7 +548,7 @@ async function loadPensum() {
     var infoWrap = document.getElementById("infoWrapper");
     infoWrap.innerHTML = "";
 
-    currentPensumCode = document.getElementById("codigoMateria").value;
+    currentPensumCode = document.getElementById("codigoMateria").value.toUpperCase();
 
     // try to check if its on localStorage, else check online and cache if successful.
     currentPensumData = getPensumFromLocalStorage(currentPensumCode);
