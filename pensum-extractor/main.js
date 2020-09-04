@@ -1,3 +1,4 @@
+var saveVer = 1;
 var unapecPensumUrl = "https://servicios.unapec.edu.do/pensum/Main/Detalles/";
 var currentPensumData = null;
 var currentPensumCode = "";
@@ -384,7 +385,7 @@ function createInfoList(data) {
 
 function saveToLocalStorage() {
     let out = {
-        saveVer: 1,
+        saveVer: saveVer,
         currentCodeAtInputForm: document.getElementById("codigoMateria").value,
     };
 
@@ -406,6 +407,11 @@ function loadFromLocalStorage() {
 
     document.getElementById("codigoMateria").value = out.currentCodeAtInputForm;
 
+    // Version management and cache clearing.
+    if (out.saveVer !== saveVer) {
+        console.info(`Updated to version ${saveVer} and cleared localStorage.`)
+        localStorage.clear();
+    }
     return true;
 }
 
