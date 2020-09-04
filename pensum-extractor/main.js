@@ -293,6 +293,7 @@ function createNewPensumTable(data) {
                     s.classList.add("monospace");
 
                     r.appendChild(s);
+                    r.appendChild(document.createTextNode('\t'))
                 });
 
                 mat.prereqExtra.forEach((x) => {
@@ -302,6 +303,7 @@ function createNewPensumTable(data) {
                     s.classList.add("preReqExtra");
 
                     r.appendChild(s);
+                    r.appendChild(document.createTextNode('\t'))
                 });
             }
         });
