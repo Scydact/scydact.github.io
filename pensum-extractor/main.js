@@ -1,12 +1,14 @@
 var unapecPensumUrl = "https://servicios.unapec.edu.do/pensum/Main/Detalles/";
-var pensumLocalData = null;
-var currentCode = "";
+var currentPensumData = null;
+var currentPensumCode = "";
+var currentPensumMats = {};
+var matLinks = {};
 
 /** Loads the node given at 'input' into the DOM */
 async function fetchPensumTable() {
     const contentDiv = document.getElementById("tempFrame");
-    currentCode = document.getElementById("codigoMateria").value;
-    var urlToLoad = unapecPensumUrl + currentCode;
+    currentPensumCode = document.getElementById("codigoMateria").value;
+    var urlToLoad = unapecPensumUrl + currentPensumCode;
     contentDiv.innerHTML = "Cargando...";
     contentDiv.innerHTML = await fetchHtmlAsText(urlToLoad);
     return contentDiv;
@@ -63,11 +65,13 @@ function extractPensumData(node) {
                 creditos: 0,
                 prereq: [],
                 prereqExtra: [],
+                cuatrimestre: 0,
             };
             let currentRows = rows[j].cells;
             outMat.codigo = currentRows[0].innerText;
             outMat.asignatura = currentRows[1].innerText;
             outMat.creditos = parseFloat(currentRows[2].innerText);
+            outMat.cuatrimestre = i + 1;
 
             // Prerequisitos
             var splitPrereq = currentRows[3].innerText
@@ -95,6 +99,67 @@ function matsToDict(arr) {
         out[e.codigo] = e;
     });
     return out;
+}
+
+/** Create mat dialog showing its dependencies and other options... */
+function createMatDialog(code) {
+    // let outMat = {
+    //     codigo: "",
+    //     asignatura: "",
+    //     creditos: 0,
+    //     prereq: [],
+    //     prereqExtra: [],
+    // };
+    codeData = currentPensumMats[code];
+    if (!codeData)
+        return new DialogBox().setMsg("Informacion no disponible para " + code);
+
+    let dialog = new DialogBox();
+    outNode = dialog.contentNode;
+
+    createElement(
+        outNode,
+        "h3",
+        `(${codeData.codigo}) '${codeData.asignatura}'`
+    );
+
+    createElement(outNode, "p", `Codigo: \t${codeData.codigo}`);
+
+    createElement(outNode, "p", `Creditos: \t${codeData.creditos}`);
+
+    createElement(outNode, "p", `Cuatrimestre: \t${codeData.cuatrimestre}`);
+
+    createElement(outNode, "h4", "Pre-requisitos");
+    if (codeData.prereq.length === 0 && codeData.prereqExtra.length === 0)
+        createElement(outNode, "p", "<i>No hay pre-requisitos</i>");
+    else {
+        codeData.prereq.forEach((x) => {
+            let p = createElement(outNode, "p");
+            let s = document.createElement("a");
+            s.innerText = `(${x}) ${currentPensumMats[x].asignatura}`;
+            s.addEventListener("click", () => {
+                dialog.hide();
+                createMatDialog(x).show();
+            });
+            s.classList.add("preReq");
+            s.classList.add("monospace");
+
+            p.appendChild(s);
+        });
+
+        codeData.prereqExtra.forEach((x) => {
+            let p = createElement(outNode, "p");
+            let s = document.createElement("a");
+            s.innerText = x;
+            s.classList.add("preReq");
+            s.classList.add("preReqExtra");
+
+            p.appendChild(s);
+        });
+    }
+
+    outNode.appendChild(dialog.createCloseButton());
+    return dialog;
 }
 
 /**
@@ -155,11 +220,21 @@ function createNewPensumTable(data) {
 
             {
                 let r = row.insertCell();
-                r.innerText = mat.codigo;
                 r.id = `a_${mat.codigo}`;
                 row.id = `r_${mat.codigo}`;
-                r.classList.add("monospace");
                 r.classList.add("text-center");
+                // r.classList.add("monospace");
+                // r.innerText = mat.codigo;
+                
+                let s = document.createElement("a");
+                s.innerText = `${mat.codigo}`;
+                s.addEventListener("click", () => {
+                    createMatDialog(mat.codigo).show();
+                });
+                s.classList.add("codigo");
+                s.classList.add("monospace");
+
+                r.appendChild(s);
             }
             row.insertCell().innerText = mat.asignatura;
             {
@@ -210,25 +285,9 @@ function createNewPensumTable(data) {
     return out;
 }
 
-/**
- * Creates a table that contains the pensum's:
- *  - Total creditos
- *  - Any extra info present on data.infoCarrera
- * @param {*} data
- */
-function createInfoList(data) {
-    /** @type {HTMLTableElement} */
-    let out = document.createElement("ul");
-
-    // Most pensums have this already
-    // let allMats = data.cuats.flat();
-    // let totalCreds = 0;
-    // for (let x of allMats) totalCreds += x.creditos;
-
-    // let outTextArr = [`Total de creditos: ${totalCreds}`].concat(data.infoCarrera);
-
-    // Separate the text before outputting.
-    let outTextArr = data.infoCarrera.map((x) => {
+/** Extracts and separates the information on "data.infoCarrera" */
+function getInfoList(data) {
+    return data.infoCarrera.map((x) => {
         let splitOnFirstColon = [
             x.substring(0, x.indexOf(": ")),
             x.substring(x.indexOf(": ") + 2),
@@ -245,6 +304,25 @@ function createInfoList(data) {
                 };
         }
     });
+}
+
+/**
+ * Creates a table that contains the pensum's general info.
+ * @param {*} data
+ */
+function createInfoList(data) {
+    /** @type {HTMLTableElement} */
+    let out = document.createElement("ul");
+
+    // Most pensums have this already
+    // let allMats = data.cuats.flat();
+    // let totalCreds = 0;
+    // for (let x of allMats) totalCreds += x.creditos;
+
+    // let outTextArr = [`Total de creditos: ${totalCreds}`].concat(data.infoCarrera);
+
+    // Separate the text before outputting.
+    let outTextArr = getInfoList(data);
 
     // Format the text as a list
     for (let x of outTextArr) {
@@ -280,7 +358,7 @@ function createInfoList(data) {
 function saveToLocalStorage() {
     let out = {
         saveVer: 1,
-        currentCodeAtInputForm: document.getElementById('codigoMateria').value,
+        currentCodeAtInputForm: document.getElementById("codigoMateria").value,
     };
 
     try {
@@ -299,7 +377,7 @@ function loadFromLocalStorage() {
 
     let out = JSON.parse(saveData);
 
-    document.getElementById('codigoMateria').value = out.currentCodeAtInputForm;
+    document.getElementById("codigoMateria").value = out.currentCodeAtInputForm;
 
     return true;
 }
@@ -387,14 +465,20 @@ function sentenceCase(string) {
 
 class DialogBox {
     constructor() {
-        this.wrapperNode = document.createElement('div');
-        this.wrapperNode.classList.add('fullscreen');
-        this.wrapperNode.classList.add('dialogWrapper');
+        this.wrapperNode = document.createElement("div");
+        this.wrapperNode.classList.add("fullscreen");
+        this.wrapperNode.classList.add("dialogWrapper");
 
-        this.contentNode = document.createElement('div');
-        this.contentNode.classList.add('dialogCard');
+        this.contentNode = document.createElement("div");
+        this.contentNode.classList.add("dialogCard");
         this.wrapperNode.appendChild(this.contentNode);
-        
+
+        return this;
+    }
+
+    setMsg(str) {
+        createElement(this.contentNode, "p", str);
+        this.contentNode.appendChild(this.createCloseButton());
         return this;
     }
 
@@ -409,13 +493,25 @@ class DialogBox {
     }
 
     createCloseButton() {
-        let a = document.createElement('a');
-        a.innerText = 'Cerrar';
-        a.addEventListener('click',() => this.hide());
-        a.classList.add('btn-primary');
+        let a = document.createElement("a");
+        a.innerText = "Cerrar";
+        a.addEventListener("click", () => this.hide());
+        a.classList.add("btn-primary");
         return a;
     }
+}
 
+function createElement(
+    parentNode,
+    tag = "div",
+    innerHTML = null,
+    classes = []
+) {
+    let x = document.createElement(tag);
+    parentNode.appendChild(x);
+    if (innerHTML !== null) x.innerHTML = innerHTML;
+    classes.forEach((clss) => x.classList.add(clss));
+    return x;
 }
 
 //#endregion
@@ -424,38 +520,39 @@ class DialogBox {
 
 /** This function is called by the <search> button */
 async function loadPensum() {
-    let pensumNode = await fetchPensumTable();
-    let pData = extractPensumData(pensumNode);
-    pensumLocalData = pData;
-    
     var infoWrap = document.getElementById("infoWrapper");
     infoWrap.innerHTML = "";
 
-    if (pData) {
-        document.getElementById("codigoMateria").value = pData.codigo;
+    let pensumNode = await fetchPensumTable();
+    currentPensumData = extractPensumData(pensumNode);
+    currentPensumMats = matsToDict(currentPensumData.cuats.flat());
 
-        window.a = pData;
+    if (currentPensumData) {
+        document.getElementById("codigoMateria").value =
+            currentPensumData.codigo;
+
+        window.a = currentPensumData;
         window.b = matsToDict(window.a.cuats.flat());
         var wrapper = document.getElementById("tempFrame");
         wrapper.innerHTML = "";
         {
             let h = document.createElement("h1");
-            h.innerText = pData.carrera;
+            h.innerText = currentPensumData.carrera;
             wrapper.appendChild(h);
         }
-        wrapper.appendChild(createNewPensumTable(pData));
+        wrapper.appendChild(createNewPensumTable(currentPensumData));
 
         {
             let h = document.createElement("h3");
             h.innerText = "Detalles de la carrera: ";
             infoWrap.appendChild(h);
         }
-        infoWrap.appendChild(createInfoList(pData));
+        infoWrap.appendChild(createInfoList(currentPensumData));
         {
-            let a = document.createElement('a');
-            a.href = unapecPensumUrl + currentCode;
-            a.target = '_blank';
-            a.innerText = 'Ver pensum original.'
+            let a = document.createElement("a");
+            a.href = unapecPensumUrl + currentPensumCode;
+            a.target = "_blank";
+            a.innerText = "Ver pensum original.";
             infoWrap.appendChild(a);
         }
     }

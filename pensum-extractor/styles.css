@@ -6,8 +6,10 @@
 }
 
 :root {
-    --background: #ececec;
+    --background : #ececec;
     --background1: #f6f6f6;
+    --tableOdd : rgba(96, 96, 255, 0.15);
+    --bgCuat: linear-gradient(90deg, transparent 0%, var(--tableOdd) 100%);
 }
 
 html {
@@ -18,7 +20,7 @@ html {
 body {
     margin        : auto;
     padding-bottom: 3rem;
-    background: var(--background);
+    background    : var(--background);
 
     width: fit-content;
 }
@@ -48,7 +50,7 @@ td {
 }
 
 tr:nth-child(2n) td:not(.cuatHeader) {
-    background: rgba(60, 60, 196, 0.2);
+    background: var(--tableOdd)
 }
 
 .cuatLimit td,
@@ -90,6 +92,12 @@ tr:nth-child(2n) td:not(.cuatHeader) {
     animation: highlight 2s;
 }
 
+.codigo {
+    cursor         : pointer;
+    margin         : 0.3rem;
+    text-decoration: underline;
+}
+
 .preReq {
     margin       : 0 0.1rem;
     padding      : 0rem .5rem;
@@ -111,6 +119,7 @@ tr:nth-child(2n) td:not(.cuatHeader) {
 
 .cuatHeader {
     max-width: 2.5rem;
+    background: var(--bgCuat);
 }
 
 .cuatHeader p {
