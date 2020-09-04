@@ -6,10 +6,10 @@
 }
 
 :root {
-    --background : #ececec;
-    --background1: #f6f6f6;
-    --tableOdd : rgba(96, 96, 255, 0.15);
-    --bgCuat: linear-gradient(90deg, transparent 0%, var(--tableOdd) 100%);
+    --background : #f3f3f3;
+    --background1: #f7f7f7;
+    --tableOdd   : rgba(96, 96, 255, 0.15);
+    --bgCuat     : linear-gradient(90deg, transparent 0%, var(--tableOdd) 100%);
 }
 
 html {
@@ -23,6 +23,23 @@ body {
     background    : var(--background);
 
     width: fit-content;
+}
+
+
+
+p {
+    margin-block-start: .3em;
+    margin-block-end  : .3em;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    margin-block-start: .6em;
+    margin-block-end  : .6em;
 }
 
 .card {
@@ -56,6 +73,16 @@ tr:nth-child(2n) td:not(.cuatHeader) {
 .cuatLimit td,
 .cuatHeader {
     border-top: 1px solid black;
+}
+
+.cuatHeader {
+    max-width : 2.5rem;
+    background: var(--bgCuat);
+    color     : rgba(0, 0, 128, 0.8);
+}
+
+.cuatHeader p {
+    margin: 0;
 }
 
 .text-center {
@@ -99,8 +126,8 @@ tr:nth-child(2n) td:not(.cuatHeader) {
 }
 
 .preReq {
-    margin       : 0 0.1rem;
-    padding      : 0rem .5rem;
+    margin       : 0.1rem;
+    padding      : 0.1rem .5rem .2rem;
     border-radius: .3rem;
     background   : rgb(167, 168, 255);
     cursor       : pointer;
@@ -117,15 +144,6 @@ tr:nth-child(2n) td:not(.cuatHeader) {
     cursor    : default;
 }
 
-.cuatHeader {
-    max-width: 2.5rem;
-    background: var(--bgCuat);
-}
-
-.cuatHeader p {
-    margin: 0;
-}
-
 .dialogWrapper {
     display        : flex;
     align-items    : center;
@@ -140,6 +158,11 @@ tr:nth-child(2n) td:not(.cuatHeader) {
     padding      : 1rem;
     border-radius: 1rem;
     box-shadow   : 0 0 .5rem 0 rgba(0, 0, 0, 0.3);
+
+    min-width : 40%;
+    max-width : 95%;
+    max-height: 95%;
+    overflow  : auto;
 }
 
 .btn-primary {
@@ -168,7 +191,10 @@ tr:nth-child(2n) td:not(.cuatHeader) {
 
     h1,
     h2,
-    h3 {
+    h3,
+    h4,
+    h5,
+    h6 {
         text-align: center;
     }
 

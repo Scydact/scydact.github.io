@@ -95,9 +95,18 @@ function extractPensumData(node) {
 /** Maps an array of Mats to an dict where the keys are the Mats' code */
 function matsToDict(arr) {
     let out = {};
-    arr.forEach((e) => {
-        out[e.codigo] = e;
+    arr.forEach((x) => {
+        out[x.codigo] = x;
+        out[x.codigo].postReq = [];
     });
+
+    // prereqs
+    arr.forEach((x) => {
+        x.prereq.forEach((y) => {
+            out[y].postReq.push(x.codigo);
+        })
+    })
+
     return out;
 }
 
@@ -129,10 +138,8 @@ function createMatDialog(code) {
 
     createElement(outNode, "p", `Cuatrimestre: \t${codeData.cuatrimestre}`);
 
-    createElement(outNode, "h4", "Pre-requisitos");
-    if (codeData.prereq.length === 0 && codeData.prereqExtra.length === 0)
-        createElement(outNode, "p", "<i>No hay pre-requisitos</i>");
-    else {
+    if (codeData.prereq.length > 0 || codeData.prereqExtra.length > 0) {
+        createElement(outNode, "h4", "Pre-requisitos");
         codeData.prereq.forEach((x) => {
             let p = createElement(outNode, "p");
             let s = document.createElement("a");
@@ -158,6 +165,23 @@ function createMatDialog(code) {
         });
     }
 
+    if (codeData.postReq.length > 0) {
+        createElement(outNode, "h4", "Es pre-requisito de: ");
+        codeData.postReq.forEach((x) => {
+            let p = createElement(outNode, "p");
+            let s = document.createElement("a");
+            s.innerText = `(${x}) ${currentPensumMats[x].asignatura}`;
+            s.addEventListener("click", () => {
+                dialog.hide();
+                createMatDialog(x).show();
+            });
+            s.classList.add("preReq");
+            s.classList.add("monospace");
+
+            p.appendChild(s);
+        });
+    }
+
     outNode.appendChild(dialog.createCloseButton());
     return dialog;
 }
@@ -174,7 +198,7 @@ function createMatDialog(code) {
  */
 function createNewPensumTable(data) {
     // Just for reference, this is the 'data' param schema.
-    // let oxxxut = {
+    // let out = {
     //     carrera: "",
     //     codigo: "",
     //     vigencia: "",
@@ -217,14 +241,13 @@ function createNewPensumTable(data) {
                 row.classList.add("cuatLimit");
                 a.classList.add("cuatHeader");
             }
-
-            {
+            
+            // Codigo mat.
+            { 
                 let r = row.insertCell();
                 r.id = `a_${mat.codigo}`;
                 row.id = `r_${mat.codigo}`;
                 r.classList.add("text-center");
-                // r.classList.add("monospace");
-                // r.innerText = mat.codigo;
                 
                 let s = document.createElement("a");
                 s.innerText = `${mat.codigo}`;
@@ -236,12 +259,18 @@ function createNewPensumTable(data) {
 
                 r.appendChild(s);
             }
+
+            // Asignatura
             row.insertCell().innerText = mat.asignatura;
+
+            // Creditos
             {
                 let r = row.insertCell();
                 r.innerText = mat.creditos;
                 r.classList.add("text-center");
             }
+
+            // Prereqs
             {
                 let r = row.insertCell();
 
@@ -276,9 +305,6 @@ function createNewPensumTable(data) {
                     r.appendChild(s);
                 });
             }
-            // row.insertCell().innerText = `${[mat.prereq, mat.prereqExtra]
-            //     .flat()
-            //     .join(", ")}`;
         });
     });
 
