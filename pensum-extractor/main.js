@@ -474,7 +474,7 @@ function createNewPensumTable(data) {
  *  - Prereq
  * @param {*} data
  */
-function createExcelWorkbookFromPensum(data, progress=[]) {
+function createExcelWorkbookFromPensum(data, progress = []) {
     let currentProgress = new Set(progress);
 
     let wb = XLSX.utils.book_new();
@@ -484,8 +484,8 @@ function createExcelWorkbookFromPensum(data, progress=[]) {
     ws['!ref'] = 'A1:H300'; // Working range
 
     ws['!merges'] = [];
-    function mergeCells(r1,c1,r2,c2) {
-        ws['!merges'].push({s:{r:r1,c:c1},e:{r:r2,c:c2}});
+    function mergeCells(r1, c1, r2, c2) {
+        ws['!merges'].push({ s: { r: r1, c: c1 }, e: { r: r2, c: c2 } });
     }
 
     let COL_CUAT = 'A';
@@ -498,20 +498,20 @@ function createExcelWorkbookFromPensum(data, progress=[]) {
     let COLS = 'ABCDEFGH';
 
     ws['!cols'] = [
-        {width: 3},
-        {width: 9},
-        {width: 50},
-        {width: 7},
-        {width: 9},
-        {width: 9},
-        {width: 9},
-        {width: 5},
+        { width: 3 },
+        { width: 9 },
+        { width: 50 },
+        { width: 7 },
+        { width: 9 },
+        { width: 9 },
+        { width: 9 },
+        { width: 5 },
     ]
 
     let currentRow = 1;
 
     ws[COLS[0] + currentRow] = { v: data.carrera, t: 's' };
-    mergeCells(0,0,0,7);
+    mergeCells(0, 0, 0, 7);
     ++currentRow;
 
     // create the header
@@ -539,8 +539,7 @@ function createExcelWorkbookFromPensum(data, progress=[]) {
 
         filteredCuat.forEach((mat, idxMat, currentCuat) => {
             ws[COL_CUAT + currentRow] = { v: idxCuat + 1, t: 'n' };
-            if (idxMat === 0) 
-            {
+            if (idxMat === 0) {
                 mergeCells(currentRow - 1, 0, (currentRow - 1) + currentCuat.length - 1, 0);
             }
 
@@ -591,7 +590,7 @@ function createExcelWorkbookFromPensum(data, progress=[]) {
 
 function createExcelWorkbookFromData(arrayOfArrays, SheetName, Props) {
     var wb = XLSX.utils.book_new();
-    wb.Props = Props || {Title: SheetName};
+    wb.Props = Props || { Title: SheetName };
     wb.SheetNames.push(SheetName);
 
     var ws = XLSX.utils.aoa_to_sheet(arrayOfArrays);
@@ -686,6 +685,43 @@ function createInfoList(data) {
     }
 
     return out;
+}
+
+//#endregion
+
+//#region Dialogs
+function createAllDownloadsDialog() {
+    let dialog = new DialogBox();
+    let node = dialog.contentNode;
+
+    createElement(node, 'h3', 'Descargar pensum');
+    node.appendChild(createSecondaryButton(`Descargar .xlsx (Excel)`, downloadCurrentPensumAsExcel));
+
+    node.appendChild(document.createElement('br'));
+    node.appendChild(dialog.createCloseButton());
+    return dialog;
+}
+
+function createImportExportDialog() {
+    let dialog = new DialogBox();
+    let node = dialog.contentNode;
+
+    createElement(node, 'h3', 'Exportar/importar progreso');
+    [
+        'Las materias aprobadas seleccionadas se guardan localmente en la cache del navegador. ',
+        'Al estar guardados en la cache, estos datos podrian borrarse en cualquier momento. ',
+        'Para evitar la perdida de estos datos, se recomienda exportar la seleccion (<code>progreso.json</code>). ',
+        'Luego, en caso de que se haya eliminado la selección, solo es necesario importarlo nuevamente.',
+    ].forEach((x) => createElement(node, 'p', x));
+    
+    node.appendChild(document.createElement('br'));
+    
+    node.appendChild(createSecondaryButton('Exportar progreso.json', downloadProgress));
+    node.appendChild(createSecondaryButton('Importar progreso.json', uploadProgress));
+
+    node.appendChild(document.createElement('br'));
+    node.appendChild(dialog.createCloseButton());
+    return dialog;
 }
 
 //#region LocalStorage Funcs
@@ -865,6 +901,14 @@ function createElement(parentNode, tag = 'div', innerHTML = null, classes = []) 
     return x;
 }
 
+function createSecondaryButton(text, callback) {
+    let a = document.createElement('a');
+    a.addEventListener('click', callback);
+    a.innerHTML = text;
+    a.classList.add('btn-secondary');
+    return a;
+}
+
 function findAllpostreqs(code) {
     function subFindArr(code) {
         let hideList = [code];
@@ -936,37 +980,12 @@ async function loadPensum() {
             a.target = '_blank';
             a.innerText = 'Ver pensum original';
 
-            let dld = createElement(btnwrp, 'a', 'Descargar...', ['btn-secondary']);
-            dld.addEventListener('click', () => createAllDownloadsDialog().show());
+            btnwrp.appendChild(createSecondaryButton('Descargar...', () => createAllDownloadsDialog().show()));
+            btnwrp.appendChild(createSecondaryButton('Guardar/Cargar selección', () => createImportExportDialog().show()));
         }
     } else {
         infoWrap.innerText = 'No se ha encontrado el pensum!';
     }
-}
-
-function createAllDownloadsDialog() {
-    let dialog = new DialogBox();
-    let node = dialog.contentNode;
-
-    function createSecondaryButton(text, callback) {
-        let a = document.createElement('a');
-        a.addEventListener('click', callback);
-        a.innerHTML = text;
-        a.classList.add('btn-secondary');
-        return a;
-    }
-
-    createElement(node, 'h3', 'Descargar pensum');
-    node.appendChild(createSecondaryButton(`Descargar .xlsx (Excel)`, downloadCurrentPensumAsExcel));
-
-
-    createElement(node, 'h3', 'Exportar/importar progreso');
-    node.appendChild(createSecondaryButton('Exportar progreso.json', downloadProgress));
-    node.appendChild(createSecondaryButton('Importar progreso.json', uploadProgress));
-
-    node.appendChild(document.createElement('br'));
-    node.appendChild(dialog.createCloseButton());
-    return dialog;
 }
 
 function drawPensumTable() {
