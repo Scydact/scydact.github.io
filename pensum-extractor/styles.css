@@ -27,8 +27,6 @@ body {
     margin        : auto;
     padding-bottom: 3rem;
     background    : var(--background);
-
-    width: fit-content;
 }
 
 
@@ -53,6 +51,8 @@ h6 {
     margin       : 1rem;
     padding      : 1rem;
     border-radius: 1rem;
+
+    width: 700px;
 }
 
 thead th {

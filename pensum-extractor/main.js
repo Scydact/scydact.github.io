@@ -16,11 +16,16 @@ const MANAGEMENT_TAKEN_CLASS = 'managementMode-taken';
 
 /** Loads the node given at 'input' into the DOM */
 async function fetchPensumTable(pensumCode) {
-    const contentDiv = document.getElementById('tempFrame');
     var urlToLoad = unapecPensumUrl + pensumCode;
-    contentDiv.innerHTML = 'Cargando...';
-    contentDiv.innerHTML = await fetchHtmlAsText(urlToLoad, {cache: 'force-cache'});
-    return contentDiv;
+    let text = await fetchHtmlAsText(urlToLoad, {cache: 'force-cache'});
+    // const contentDiv = document.getElementById('tempFrame');
+    // contentDiv.innerHTML = 'Cargando...';
+    // contentDiv.innerHTML = await fetchHtmlAsText(urlToLoad, {cache: 'force-cache'});
+    // return contentDiv;
+
+    let parser = new DOMParser();
+    let doc = parser.parseFromString(text,'text/xml');
+    return doc;
 }
 
 /**
@@ -38,23 +43,23 @@ function extractPensumData(node) {
 
     // Verify if pensum is actually valid data
     if (
-        node.getElementsByClassName('contPensum').length != 0 &&
+        node.getElementsByClassName('contPensum').length == 0 ||
         node.getElementsByClassName('contPensum')[0].children.length < 2
     )
         return null;
 
     // Extract basic data
     var cabPensum = node.getElementsByClassName('cabPensum')[0];
-    out.carrera = cabPensum.firstElementChild.innerText.trim();
+    out.carrera = cabPensum.firstElementChild.textContent.trim();
     var pMeta = cabPensum.getElementsByTagName('p')[0].children;
-    out.codigo = pMeta[0].innerText.trim();
-    out.vigencia = pMeta[1].innerText.trim();
+    out.codigo = pMeta[0].textContent.trim();
+    out.vigencia = pMeta[1].textContent.trim();
 
     // Extract infoCarrera
     var infoCarrera = node.getElementsByClassName('infoCarrera')[0].children;
     for (let i = 0; i < infoCarrera.length; ++i) {
         out.infoCarrera.push(
-            infoCarrera[i].innerText.replaceAll('\n', ' ').trim()
+            infoCarrera[i].textContent.replaceAll('\n', ' ').trim()
         );
     }
 
@@ -67,7 +72,7 @@ function extractPensumData(node) {
          * @type {HTMLTableElement}
          */
         let currentCuatTable = cuatrim[i];
-        let rows = currentCuatTable.tBodies[0].rows;
+        let rows = currentCuatTable.children;
 
         let outCuat = [];
 
@@ -80,14 +85,14 @@ function extractPensumData(node) {
                 prereqExtra: [],
                 cuatrimestre: 0,
             };
-            let currentRows = rows[j].cells;
-            outMat.codigo = currentRows[0].innerText.trim();
-            outMat.asignatura = currentRows[1].innerText.trim();
-            outMat.creditos = parseFloat(currentRows[2].innerText);
+            let currentRows = rows[j].children;
+            outMat.codigo = currentRows[0].textContent.trim();
+            outMat.asignatura = currentRows[1].textContent.trim();
+            outMat.creditos = parseFloat(currentRows[2].textContent);
             outMat.cuatrimestre = i + 1;
 
             // Prerequisitos
-            var splitPrereq = currentRows[3].innerText
+            var splitPrereq = currentRows[3].textContent
                 .replaceAll('\n', ',')
                 .split(',')
                 .map((x) => x.trim())
