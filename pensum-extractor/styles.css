@@ -10,6 +10,7 @@
     --background1: #f7f7f7;
     --tableOdd   : rgba(96, 96, 255, 0.15);
     --bgCuat     : linear-gradient(90deg, transparent 0%, var(--tableOdd) 100%);
+    --bgCuat-hover: rgba(96, 96, 255, 0.5);
 
     --background-taken      : rgb(125, 245, 135);
     --background-taken-hover: rgb(7, 182, 22);
@@ -84,6 +85,11 @@ tr:nth-child(2n) td {
     max-width : 2.5rem;
     background: var(--bgCuat);
     color     : rgba(0, 0, 128, 0.8);
+}
+
+.cuatHeader:hover {
+    box-shadow: 0 0 0 2px black;
+    background: var(--bgCuat-hover);
 }
 
 .cuatHeader p {

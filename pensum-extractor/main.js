@@ -336,10 +336,26 @@ function createNewPensumTable(data) {
                 let a = document.createElement('th');
                 row.appendChild(a);
                 a.rowSpan = currentCuat.length;
-                a.innerHTML = `<p class='vertical-text'>
-                Cuat. ${idxCuat + 1}</p>`;
+                let p = createElement(a, 'p', `Cuat. ${idxCuat + 1}`, ['vertical-text']);
                 row.classList.add('cuatLimit');
                 a.classList.add('cuatHeader');
+
+                // Allow all cuats selection
+                a.addEventListener('click', () => {
+                    // Check if all are checked
+                    let currentCuatMats = cuat.map((x) => x.codigo);
+                    let selectedCuatMats = currentCuatMats.filter((x) => currentProgress.has(x));
+
+                    // If all are checked, uncheck, else check.
+                    if (currentCuatMats.length == selectedCuatMats.length) {
+                        for (let x of currentCuatMats)
+                            currentProgress.delete(x);
+                    } else {
+                        for (let x of currentCuatMats)
+                            currentProgress.add(x);
+                    }
+                    loadPensum();
+                })
             }
 
             // Selection check
