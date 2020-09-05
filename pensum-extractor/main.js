@@ -9,6 +9,9 @@ var currentPensumMats = {};
 var filterMode = 'noFilter';
 var currentProgress = new Set();
 
+// The version of FileSaver used here places this method on the global namespace
+FileSaver.saveAs = saveAs;
+
 const MANAGEMENT_TAKEN_CLASS = 'managementMode-taken';
 
 /** Loads the node given at 'input' into the DOM */
@@ -401,7 +404,7 @@ function createNewPensumTable(data) {
 
                 let s = document.createElement('a');
                 s.innerText = `${mat.codigo}`;
-                s.addEventListener('click', () => {createMatDialog(mat.codigo).show();});
+                s.addEventListener('click', () => { createMatDialog(mat.codigo).show(); });
                 s.classList.add('codigo');
                 s.classList.add('monospace');
 
@@ -428,7 +431,7 @@ function createNewPensumTable(data) {
                     s.addEventListener('click', () => {
                         let targetCell = document.getElementById(`a_${x}`);
                         let targetRow = document.getElementById(`r_${x}`);
-                        targetCell.scrollIntoView({block: 'center'});
+                        targetCell.scrollIntoView({ block: 'center' });
                         targetRow.classList.remove('highlightRow');
                         targetRow.classList.add('highlightRow');
                         setTimeout(() => targetRow.classList.remove('highlightRow'), 2e3);
@@ -461,6 +464,166 @@ function createNewPensumTable(data) {
     return out;
 }
 
+/**
+ * Recreates the pensumData, as a new formatted table.
+ * Cols:
+ *  - CUAT indicator
+ *  - Codigo
+ *  - Nombre
+ *  - Creds
+ *  - Prereq
+ * @param {*} data
+ */
+function createExcelWorkbookFromPensum(data, progress=[]) {
+    let currentProgress = new Set(progress);
+
+    let wb = XLSX.utils.book_new();
+    let ws = XLSX.utils.aoa_to_sheet([[]]);
+    XLSX.utils.book_append_sheet(wb, ws, 'Pensum');
+
+    ws['!ref'] = 'A1:H300'; // Working range
+
+    ws['!merges'] = [];
+    function mergeCells(r1,c1,r2,c2) {
+        ws['!merges'].push({s:{r:r1,c:c1},e:{r:r2,c:c2}});
+    }
+
+    let COL_CUAT = 'A';
+    let COL_CODIGO = 'B';
+    let COL_NOMBRE = 'C';
+    let COL_CREDITOS = 'D';
+    let COL_PREREQ = 'EFG';
+    let COL_APROB = 'H';
+
+    let COLS = 'ABCDEFGH';
+
+    ws['!cols'] = [
+        {width: 3},
+        {width: 9},
+        {width: 50},
+        {width: 7},
+        {width: 9},
+        {width: 9},
+        {width: 9},
+        {width: 5},
+    ]
+
+    let currentRow = 1;
+
+    ws[COLS[0] + currentRow] = { v: data.carrera, t: 's' };
+    mergeCells(0,0,0,7);
+    ++currentRow;
+
+    // create the header
+    let headers = ['Ct', 'Codigo', 'Asignatura', 'Créditos', 'Pre-req #1', 'Pre-req #2', 'Pre-req #3', 'Aprobada?'];
+    for (let i = 0; i < headers.length; ++i) {
+        ws[COLS[i] + currentRow] = { v: headers[i], t: 's' };
+    }
+    ++currentRow;
+
+    // create the contents 
+    data.cuats.forEach((cuat, idxCuat) => {
+        var filteredCuat;
+        switch (filterMode) {
+            default:
+            case 'noFilter':
+                filteredCuat = cuat;
+                break;
+            // case 'showPassed':
+            //     filteredCuat = cuat.filter((mat) => currentProgress.has(mat.codigo));
+            //     break;
+            // case 'hidePassed':
+            //     filteredCuat = cuat.filter((mat) => !currentProgress.has(mat.codigo));
+            //     break;
+        }
+
+        filteredCuat.forEach((mat, idxMat, currentCuat) => {
+            ws[COL_CUAT + currentRow] = { v: idxCuat + 1, t: 'n' };
+            if (idxMat === 0) 
+            {
+                mergeCells(currentRow - 1, 0, (currentRow - 1) + currentCuat.length - 1, 0);
+            }
+
+            // Codigo mat.
+            ws[COL_CODIGO + currentRow] = { v: mat.codigo, t: 's' };
+
+            // Asignatura
+            ws[COL_NOMBRE + currentRow] = { v: mat.asignatura, t: 's' };
+
+            // Creditos
+            ws[COL_CREDITOS + currentRow] = { v: mat.creditos, t: 'n' };
+
+            // Prereqs
+            let prereqCount = 0;
+            for (let x of mat.prereq) {
+                ws[COL_PREREQ[prereqCount] + currentRow] = { v: x, t: 's' };
+                ++prereqCount;
+            }
+            for (let x of mat.prereqExtra) {
+                ws[COL_PREREQ[prereqCount] + currentRow] = { v: x, t: 's' };
+                ++prereqCount;
+            }
+
+            // Aprobada
+            let aprobVal = currentProgress.has(mat.codigo) ? 1 : 0;
+            ws[COL_APROB + currentRow] = { v: aprobVal, t: 'n' };
+
+            ++currentRow;
+        });
+    });
+
+    try {
+        let [cd_d, cd_m, cd_y] = data.vigencia.split('/').map((x) => parseFloat(x));
+        var createDate = new Date(cd_y, cd_m, cd_d)
+    } catch {
+        var createDate = new Date();
+    }
+
+    wb.Props = {
+        Title: `Pensum ${data.codigo} ${titleCase(data.carrera)}`,
+        CreatedDate: createDate,
+    }
+
+    return wb;
+}
+
+
+
+function createExcelWorkbookFromData(arrayOfArrays, SheetName, Props) {
+    var wb = XLSX.utils.book_new();
+    wb.Props = Props || {Title: SheetName};
+    wb.SheetNames.push(SheetName);
+
+    var ws = XLSX.utils.aoa_to_sheet(arrayOfArrays);
+    wb.Sheets[SheetName] = ws;
+
+    return wb;
+}
+
+function writeExcelWorkbookAsXlsx(wb) {
+    var wb_out = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+    return wb_out;
+}
+
+function downloadXlsx(wb_out, fileNameWithoutExt) {
+    var fileName = fileNameWithoutExt + '.xlsx';
+
+    // Convert binary data to octet stream
+    var buf = new ArrayBuffer(wb_out.length); //convert s to arrayBuffer
+    var view = new Uint8Array(buf); //create uint8array as viewer
+    for (var i = 0; i < wb_out.length; i++) view[i] = wb_out.charCodeAt(i) & 0xff; //convert to octet
+
+    // Download
+    let blob = new Blob([buf], { type: 'application/octet-stream' });
+    FileSaver.saveAs(blob, fileName);
+}
+
+function downloadCurrentPensumAsExcel() {
+    let wb = createExcelWorkbookFromPensum(currentPensumData);
+    let wb_out = writeExcelWorkbookAsXlsx(wb);
+    downloadXlsx(wb_out, wb.Props.Title);
+}
+
 /** Extracts and separates the information on 'data.infoCarrera' */
 function getInfoList(data) {
     return data.infoCarrera.map((x) => {
@@ -477,7 +640,7 @@ function getInfoList(data) {
                 return {
                     type: 'double_sublist',
                     data: [
-                        splitOnFirstColon[0], 
+                        splitOnFirstColon[0],
                         splitOnDots
                     ],
                 };
@@ -492,7 +655,7 @@ function getInfoList(data) {
 function createInfoList(data) {
     /** @type {HTMLTableElement} */
     let out = document.createElement('ul');
-    
+
     // Separate the text before outputting.
     let outTextArr = getInfoList(data);
 
@@ -689,14 +852,9 @@ class DialogBox {
     }
 }
 
-function downloadObjectAsJson(exportObj, exportName) {
-    var dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(exportObj));
-    var downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute('href', dataStr);
-    downloadAnchorNode.setAttribute('download', exportName + '.json');
-    document.body.appendChild(downloadAnchorNode); // required for firefox
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
+function downloadObjectAsJson(exportObj, exportNameWithoutExt) {
+    var blob = new Blob([JSON.stringify(exportObj)], { type: 'data:text/json;charset=utf-8' });
+    FileSaver.saveAs(blob, exportNameWithoutExt + '.json');
 }
 
 function createElement(parentNode, tag = 'div', innerHTML = null, classes = []) {
@@ -799,6 +957,8 @@ function createAllDownloadsDialog() {
     }
 
     createElement(node, 'h3', 'Descargar pensum');
+    node.appendChild(createSecondaryButton(`Descargar .xlsx (Excel)`, downloadCurrentPensumAsExcel));
+
 
     createElement(node, 'h3', 'Exportar/importar progreso');
     node.appendChild(createSecondaryButton('Exportar progreso.json', downloadProgress));
@@ -896,7 +1056,7 @@ async function onWindowLoad() {
         ]);
 
         // from awesomplete.min.js
-        new Awesomplete(input, {minChars: 0,list: list,});
+        new Awesomplete(input, { minChars: 0, list: list, });
     } catch {
         console.warn('carreras.json could not be loaded.\n Search autocomplete will not be available.');
     }
