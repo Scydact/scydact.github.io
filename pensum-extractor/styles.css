@@ -6,10 +6,10 @@
 }
 
 :root {
-    --background : #f3f3f3;
-    --background1: #f7f7f7;
-    --tableOdd   : rgba(96, 96, 255, 0.15);
-    --bgCuat     : linear-gradient(90deg, transparent 0%, var(--tableOdd) 100%);
+    --background  : #f3f3f3;
+    --background1 : #f7f7f7;
+    --tableOdd    : rgba(96, 96, 255, 0.15);
+    --bgCuat      : linear-gradient(90deg, transparent 0%, var(--tableOdd) 100%);
     --bgCuat-hover: rgba(96, 96, 255, 0.5);
 
     --background-taken      : rgb(125, 245, 135);
@@ -27,8 +27,15 @@ body {
     margin        : auto;
     padding-bottom: 3rem;
     background    : var(--background);
-}
 
+    display        : flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    
+    width: auto;
+    width: min(60rem,100%);
+    width: fit-content; /* Doesnt work on firefox */
+}
 
 
 p {
@@ -52,7 +59,15 @@ h6 {
     padding      : 1rem;
     border-radius: 1rem;
 
-    width: 700px;
+    box-shadow: 0 0 10px 0px rgba(0, 0, 0, 0.2);
+
+    display       : flex;
+    flex-direction: column;
+    align-items   : center;
+}
+
+#pensumWrapper {
+    flex-shrink: 0;
 }
 
 thead th {
@@ -236,12 +251,14 @@ tr:nth-child(2n) td {
     display: flex;
 }
 
-@media only screen and (max-width: 1000px) {
+@media only screen and (max-width: 700px) {
 
     body {
         display       : flex;
         flex-direction: column;
         align-items   : stretch;
+
+        width: 100%;
     }
 
     h1,
@@ -254,6 +271,7 @@ tr:nth-child(2n) td {
     }
 
     .card {
+        width        : auto;
         margin       : 0;
         padding      : 1rem;
         border       : none;
