@@ -6,6 +6,7 @@
 }
 
 :root {
+    --wallpaper   : #dddddd;
     --background  : #f3f3f3;
     --background1 : #f7f7f7;
     --tableOdd    : rgba(96, 96, 255, 0.15);
@@ -26,15 +27,16 @@ html {
 body {
     margin        : auto;
     padding-bottom: 3rem;
-    background    : var(--background);
+    background    : var(--wallpaper);
 
-    display        : flex;
+    display       : flex;
     flex-direction: column;
-    flex-wrap: wrap;
-    
+    flex-wrap     : wrap;
+
     width: auto;
-    width: min(60rem,100%);
-    width: fit-content; /* Doesnt work on firefox */
+    width: min(60rem, 100%);
+    width: fit-content;
+    /* Doesnt work on firefox */
 }
 
 
@@ -54,11 +56,11 @@ h6 {
 }
 
 .card {
-    border       : 3px solid black;
+    /* border       : 3px solid black; */
     margin       : 1rem;
-    padding      : 1rem;
+    padding      : 1.5rem;
     border-radius: 1rem;
-
+    background   : var(--background); 
     box-shadow: 0 0 10px 0px rgba(0, 0, 0, 0.2);
 
     display       : flex;
@@ -225,6 +227,7 @@ tr:nth-child(2n) td {
 
 .btn-primary:hover {
     background: rgb(45, 47, 182);
+    flex-grow: 2;
 }
 
 .btn-secondary {
@@ -235,6 +238,8 @@ tr:nth-child(2n) td {
     cursor       : pointer;
     font-size    : small;
     text-align   : center;
+
+    flex-grow: 1;
 
     border         : none;
     text-decoration: none;
@@ -249,6 +254,8 @@ tr:nth-child(2n) td {
 
 .inline-btn-wrapper {
     display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 @media only screen and (max-width: 700px) {
@@ -272,11 +279,8 @@ tr:nth-child(2n) td {
 
     .card {
         width        : auto;
-        margin       : 0;
+        
         padding      : 1rem;
-        border       : none;
-        border-radius: 0;
-        border-bottom: 2px solid black;
 
         display       : flex;
         flex-direction: column;
@@ -284,7 +288,9 @@ tr:nth-child(2n) td {
     }
 
     #pensumWrapper {
-        padding: 0;
+        padding: 3rem 0 1rem;
+        margin-left: 0;
+        margin-right: 0;
     }
 }
 
