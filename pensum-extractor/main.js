@@ -19,7 +19,7 @@ async function fetchPensumTable(pensumCode) {
     const contentDiv = document.getElementById('tempFrame');
     var urlToLoad = unapecPensumUrl + pensumCode;
     contentDiv.innerHTML = 'Cargando...';
-    contentDiv.innerHTML = await fetchHtmlAsText(urlToLoad);
+    contentDiv.innerHTML = await fetchHtmlAsText(urlToLoad, {cache: 'force-cache'});
     return contentDiv;
 }
 
@@ -774,14 +774,13 @@ function loadFromLocalStorage() {
  * Reference: https://developer.mozilla.org/en-US/docs/Web/API/Request/cache
  * @return {String} the resulting HTML string fragment
  */
-async function fetchHtmlAsText(
-    url,
-    cacheOpt = 'force-cache' /*'force-cache'*/
-) {
+async function fetchHtmlAsText(url, opts = {}, forceProxy = -1) {
     const corsOverride = [
         'https://api.allorigins.win/raw?url=',
-        'https://yacdn.org/serve/',
+        'https://yacdn.org/proxy/',
+        'https://crossorigin.me/',
         'https://cors-anywhere.herokuapp.com/', // has request limit (200 per hour)
+        'https://yacdn.org/serve/',
         'https://cors-proxy.htmldriven.com/?url=', // Fails with CORS (what!?)
         'https://thingproxy.freeboard.io/fetch/', // problems with https requests
         'http://www.whateverorigin.org/get?url=', // problems with https requests, deprecated?
@@ -790,27 +789,33 @@ async function fetchHtmlAsText(
     let i = 0;
     while (i < corsOverride.length) {
         var currProxy = corsOverride[i];
+        if (forceProxy !== -1) {
+            if (typeof forceProxy == 'number') currProxy = corsOverride[forceProxy];
+            else currProxy = forceProxy;
+        }
+
         try {
-            var opts = {
-                cache: cacheOpt,
-                signal: null,
-            };
             var controller = new AbortController();
             var signal = controller.signal;
             opts.signal = signal;
 
-            var timeoutId = setTimeout(() => controller.abort(), 3e3);
+            var timeoutId = setTimeout(() => {
+                controller.abort();
+                console.warn('Timed out!');
+            }, 3e3);
             var sendDate = new Date().getTime();
 
             var response = await fetch(currProxy + url, opts);
+            clearTimeout(timeoutId);
             if (response.ok) {
                 var recieveDate = new Date().getTime();
                 console.info(`CORS proxy '${currProxy}' succeeded in ${recieveDate - sendDate}ms.'`);
                 return await response.text();
             } else {
-                throw 'Timed out!';
+                throw 'Response was not OK!';
             }
         } catch (err) {
+            clearTimeout(timeoutId);
             var recieveDate = new Date().getTime();
             console.warn(`CORS proxy '${currProxy}' failed in ${recieveDate - sendDate}ms.'`);
             console.warn(err);
