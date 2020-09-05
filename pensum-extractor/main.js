@@ -1,9 +1,15 @@
-var saveVer = 1;
+var saveVer = 3;
 var unapecPensumUrl = "https://servicios.unapec.edu.do/pensum/Main/Detalles/";
+var allIgnored = {}; // Mats that are no longer available and should be ommited from the pensum
+
 var currentPensumData = null;
 var currentPensumCode = "";
 var currentPensumMats = {};
-var matLinks = {};
+
+var filterMode = 'noFilter';
+var currentProgress = new Set();
+
+const MANAGEMENT_TAKEN_CLASS = 'managementMode-taken';
 
 /** Loads the node given at 'input' into the DOM */
 async function fetchPensumTable(pensumCode) {
@@ -36,7 +42,7 @@ function extractPensumData(node) {
 
     // Extract basic data
     var cabPensum = node.getElementsByClassName("cabPensum")[0];
-    out.carrera = cabPensum.firstElementChild.innerText;
+    out.carrera = cabPensum.firstElementChild.innerText.trim();
     var pMeta = cabPensum.getElementsByTagName("p")[0].children;
     out.codigo = pMeta[0].innerText.trim();
     out.vigencia = pMeta[1].innerText.trim();
@@ -44,11 +50,13 @@ function extractPensumData(node) {
     // Extract infoCarrera
     var infoCarrera = node.getElementsByClassName("infoCarrera")[0].children;
     for (let i = 0; i < infoCarrera.length; ++i) {
-        out.infoCarrera.push(infoCarrera[i].innerText);
+        out.infoCarrera.push(infoCarrera[i].innerText.replaceAll('\n',' ').trim());
     }
 
     // Extract cuats
     var cuatrim = node.getElementsByClassName("cuatrim");
+    var ignoredMats = new Set(allIgnored[out.codigo]);
+
     for (let i = 0; i < cuatrim.length; ++i) {
         /**
          * @type {HTMLTableElement}
@@ -68,8 +76,8 @@ function extractPensumData(node) {
                 cuatrimestre: 0,
             };
             let currentRows = rows[j].cells;
-            outMat.codigo = currentRows[0].innerText;
-            outMat.asignatura = currentRows[1].innerText;
+            outMat.codigo = currentRows[0].innerText.trim();
+            outMat.asignatura = currentRows[1].innerText.trim();
             outMat.creditos = parseFloat(currentRows[2].innerText);
             outMat.cuatrimestre = i + 1;
 
@@ -85,7 +93,8 @@ function extractPensumData(node) {
                 else outMat.prereqExtra.push(a);
             }
 
-            outCuat.push(outMat);
+            if (!ignoredMats.has(outMat.codigo)) 
+                outCuat.push(outMat);
         }
         out.cuats.push(outCuat);
     }
@@ -104,8 +113,8 @@ function matsToDict(arr) {
     arr.forEach((x) => {
         x.prereq.forEach((y) => {
             out[y].postReq.push(x.codigo);
-        })
-    })
+        });
+    });
 
     return out;
 }
@@ -150,6 +159,8 @@ function createMatDialog(code) {
             });
             s.classList.add("preReq");
             s.classList.add("monospace");
+            s.classList.add(`c_${x}`);
+            s.classList.add(`c__`);
 
             p.appendChild(s);
         });
@@ -177,13 +188,93 @@ function createMatDialog(code) {
             });
             s.classList.add("preReq");
             s.classList.add("monospace");
+            s.classList.add(`c_${x}`);
+            s.classList.add(`c__`);
 
             p.appendChild(s);
         });
     }
 
     outNode.appendChild(dialog.createCloseButton());
+    updateTakenPrereqClasses(outNode);
     return dialog;
+}
+
+/** Adds or removes MANAGEMENT_TAKEN_CLASS to the related elements */
+function updateTakenPrereqClasses(node=document) {
+    for (let elem of node.getElementsByClassName('c__'))
+        elem.classList.remove(MANAGEMENT_TAKEN_CLASS);
+    
+    for (let code of currentProgress) {
+        for (let elem of node.getElementsByClassName(`c_${code}`)) {
+            elem.classList.add(MANAGEMENT_TAKEN_CLASS);
+        }
+    }
+}
+
+
+/**
+ * Returns the following data for the given mats code array 
+ * (based on the loaded pensum):
+ * - Current creds
+ * - Total creds
+ * 
+ * @param {*} matArray Array of mats codes (e.g. [ESP101, IDI033...])
+ */
+function analyseGradeProgress(matArray) {
+    let matSet = new Set(matArray);
+    let out = {
+        totalCreds: 0,
+        currentCreds: 0,
+        currentMats: 0,
+    }
+
+    for(let matCode in currentPensumMats) {
+        let currentMatObj = currentPensumMats[matCode];
+        out.totalCreds += currentMatObj.creditos;
+        if (matSet.has(matCode)) {
+            out.currentCreds += currentMatObj.creditos;
+            ++out.currentMats;
+        }
+        
+    }
+
+    return out;
+}
+
+/** Updates the element #progressWrapper with data 
+ * related to the user's mats selection */
+function updateGradeProgress() {
+    let progressData = analyseGradeProgress(currentProgress);
+
+    let node = document.getElementById('progressWrapper');
+    node.innerHTML = '';
+
+    if (progressData.currentCreds == 0) return;
+
+    createElement(node, 'h3', 'Progreso en la carrera: ');
+
+    let ul = createElement(node, 'ul');
+
+    createElement(ul, 'li', `Materias aprobadas: ${progressData.currentMats}`);
+    
+    var n = (100 * progressData.currentCreds/progressData.totalCreds).toFixed(2);
+    createElement(ul, 'li', 
+        `Creditos aprobados: ${progressData.currentCreds} (${n}%)`);
+    createElement(ul, 'li', `Creditos en total: ${progressData.totalCreds}`);
+
+    {
+        createElement(node,'label','Mostrar materias en pensum: ');
+        let sel = createElement(node, 'select');
+        createElement(sel, 'option', 'Mostrar todas').value = 'noFilter';
+        createElement(sel, 'option', 'Esconder aprobadas').value = 'hidePassed';
+        createElement(sel, 'option', 'Solo mostrar aprobadas').value = 'showPassed';
+        sel.value = filterMode;
+        sel.addEventListener('change',() => {
+            filterMode = sel.value;
+            loadPensum();
+        });
+    }
 }
 
 /**
@@ -219,7 +310,7 @@ function createNewPensumTable(data) {
 
     // create the header
     let headerRow = out.createTHead();
-    ["Ct", "Codigo", "Asignatura", "Creditos", "Pre-requisitos"].forEach(
+    ["Ct", "✔", "Codigo", "Asignatura", "Créditos", "Pre-requisitos"].forEach(
         (x) => {
             let a = document.createElement("th");
             a.innerText = x;
@@ -227,28 +318,81 @@ function createNewPensumTable(data) {
         }
     );
 
+    // This allows global showing/hiding of management.
+    headerRow.children[1].classList.add('managementMode-cell');
+
     // create the contents
     data.cuats.forEach((cuat, idxCuat) => {
-        cuat.forEach((mat, idxMat, currentCuat) => {
+        var filteredCuat;
+        switch (filterMode) {
+            default:
+            case 'noFilter':
+                filteredCuat = cuat;
+                break;
+            case 'showPassed':
+                filteredCuat = cuat.filter((mat) => currentProgress.has(mat.codigo))
+                break;
+            case 'hidePassed':
+                filteredCuat = cuat.filter((mat) => !currentProgress.has(mat.codigo))
+                break;
+        }
+
+        filteredCuat.forEach((mat, idxMat, currentCuat) => {
             let row = out.insertRow();
+            row.id = `r_${mat.codigo}`;
+            row.classList.add(`c_${mat.codigo}`);
+            row.classList.add(`c__`);
+
             if (idxMat === 0) {
                 let a = document.createElement("th");
                 row.appendChild(a);
                 a.rowSpan = currentCuat.length;
-                a.innerHTML = `<p class='vertical-text'>Cuat. ${
-                    idxCuat + 1
-                }</p>`;
+                a.innerHTML = `<p class='vertical-text'>
+                Cuat. ${idxCuat + 1}</p>`;
                 row.classList.add("cuatLimit");
                 a.classList.add("cuatHeader");
             }
-            
+
+            // Selection check
+            {
+                let r = row.insertCell();
+                r.classList.add("text-center");
+                r.classList.add('managementMode-cell');
+
+                let s = document.createElement("input");
+                s.type = 'checkbox';
+                if (currentProgress.has(mat.codigo))
+                    s.checked = true;
+
+                s.addEventListener("change", () => {
+                    if (s.checked) {
+                        currentProgress.add(mat.codigo);
+                    } else {
+                        currentProgress.delete(mat.codigo);
+                    }
+                    updateTakenPrereqClasses();
+                    updateGradeProgress();
+                    if (filterMode !== 'noFilter') {
+                        let allMats = Object.keys(currentPensumMats);
+                        let matsLeft = new Set(
+                            allMats.filter((x) => !currentProgress.has(x))
+                        );
+                        if (matsLeft.size == allMats.length) filterMode = 'noFilter';
+                        loadPensum();
+                    }
+                });
+
+                r.appendChild(s);
+            }
+
             // Codigo mat.
-            { 
+            {
                 let r = row.insertCell();
                 r.id = `a_${mat.codigo}`;
-                row.id = `r_${mat.codigo}`;
                 r.classList.add("text-center");
-                
+                r.classList.add(`c_${mat.codigo}`);
+                r.classList.add(`c__`);
+
                 let s = document.createElement("a");
                 s.innerText = `${mat.codigo}`;
                 s.addEventListener("click", () => {
@@ -292,9 +436,11 @@ function createNewPensumTable(data) {
                     });
                     s.classList.add("preReq");
                     s.classList.add("monospace");
+                    s.classList.add(`c_${x}`); // mat's code
+                    s.classList.add(`c__`);
 
                     r.appendChild(s);
-                    r.appendChild(document.createTextNode('\t'))
+                    r.appendChild(document.createTextNode("\t"));
                 });
 
                 mat.prereqExtra.forEach((x) => {
@@ -304,11 +450,14 @@ function createNewPensumTable(data) {
                     s.classList.add("preReqExtra");
 
                     r.appendChild(s);
-                    r.appendChild(document.createTextNode('\t'))
+                    r.appendChild(document.createTextNode("\t"));
                 });
             }
         });
     });
+
+    updateTakenPrereqClasses(out);
+    updateGradeProgress();
 
     return out;
 }
@@ -387,6 +536,7 @@ function saveToLocalStorage() {
     let out = {
         saveVer: saveVer,
         currentCodeAtInputForm: document.getElementById("codigoMateria").value,
+        progress: [...currentProgress],
     };
 
     try {
@@ -406,10 +556,13 @@ function loadFromLocalStorage() {
     let out = JSON.parse(saveData);
 
     document.getElementById("codigoMateria").value = out.currentCodeAtInputForm;
+    
+    if (out.progress)
+        currentProgress = new Set(out.progress);
 
     // Version management and cache clearing.
     if (out.saveVer !== saveVer) {
-        console.info(`Updated to version ${saveVer} and cleared localStorage.`)
+        console.info(`Updated to version ${saveVer} and cleared localStorage.`);
         localStorage.clear();
     }
     return true;
@@ -547,6 +700,20 @@ function createElement(
     return x;
 }
 
+function findAllPostReqs(code) {
+
+    function subFindArr(code) {
+        let hideList = [code];
+        currentPensumMats[code].postReq.forEach((x) => {
+            hideList.push(...subFindArr(x));
+        });
+        return hideList;
+    }
+    
+    // Set to remove duplicates.
+    return [...new Set(subFindArr(code))];
+}
+
 //#endregion
 
 //#region Init
@@ -556,7 +723,9 @@ async function loadPensum() {
     var infoWrap = document.getElementById("infoWrapper");
     infoWrap.innerHTML = "";
 
-    currentPensumCode = document.getElementById("codigoMateria").value.toUpperCase();
+    currentPensumCode = document
+        .getElementById("codigoMateria")
+        .value.toUpperCase();
 
     // try to check if its on localStorage, else check online and cache if successful.
     currentPensumData = getPensumFromLocalStorage(currentPensumCode);
@@ -573,41 +742,63 @@ async function loadPensum() {
         }
     }
 
+    // If data was succesfully found
     if (currentPensumData) {
+
+        // Set the search bar
         currentPensumMats = matsToDict(currentPensumData.cuats.flat());
         document.getElementById("codigoMateria").value =
             currentPensumData.codigo;
 
-        var wrapper = document.getElementById("tempFrame");
-        wrapper.innerHTML = "";
-        {
-            let h = document.createElement("h1");
-            h.innerText = currentPensumData.carrera;
-            wrapper.appendChild(h);
-        }
-        wrapper.appendChild(createNewPensumTable(currentPensumData));
+        // Load the ignored mats
+        if (allIgnored[currentPensumData.codigo])
+            currentIgnored = new Set(allIgnored[currentPensumData.codigo]);
+        else
+            currentIgnored = new Set();
 
+        // Display the table
+        drawPensumTable();
+
+        // Set 'Detalles de la carrera'
         {
             let h = document.createElement("h3");
             h.innerText = "Detalles de la carrera: ";
             infoWrap.appendChild(h);
-        }
-        infoWrap.appendChild(createInfoList(currentPensumData));
-        {
+
+            infoWrap.appendChild(createInfoList(currentPensumData));
+
+            // Original Pensum link from UNAPEC
             let a = document.createElement("a");
             a.href = unapecPensumUrl + currentPensumCode;
             a.target = "_blank";
             a.innerText = "Ver pensum original.";
             infoWrap.appendChild(a);
         }
+
     } else {
-        infoWrap.innerText = 'No se ha encontrado el pensum!'
+        infoWrap.innerText = "No se ha encontrado el pensum!";
     }
+}
+
+function drawPensumTable() {
+    var wrapper = document.getElementById("pensumWrapper");
+    let div = document.createElement('div');
+    {
+        let h = document.createElement("h1");
+        h.innerText = currentPensumData.carrera;
+        div.appendChild(h);
+    }
+    div.appendChild(createNewPensumTable(currentPensumData));
+    
+    if (wrapper.firstChild)
+        wrapper.replaceChild(div, wrapper.firstChild);
+    else
+        wrapper.appendChild(div);
 }
 
 function setPensumToLocalStorage(data) {
     try {
-        let code = 'cache_' + data.codigo;
+        let code = "cache_" + data.codigo;
         let json = JSON.stringify(data);
         window.localStorage.setItem(code, json);
         return true;
@@ -618,7 +809,7 @@ function setPensumToLocalStorage(data) {
 
 function getPensumFromLocalStorage(matCode) {
     try {
-        let code = 'cache_' + matCode;
+        let code = "cache_" + matCode;
         let json = window.localStorage.getItem(code);
         return JSON.parse(json);
     } catch {
@@ -627,7 +818,6 @@ function getPensumFromLocalStorage(matCode) {
 }
 
 async function onWindowLoad() {
-    //mFrame.addEventListener('load',(e)=>console.log('loaded'));
     try {
         let carr = await (await fetch("carreras.json")).json();
         let input = document.getElementById("codigoMateria");
@@ -648,7 +838,15 @@ async function onWindowLoad() {
         );
     }
 
-    // associate input with Enter.
+    try {
+        let tempIgnored = await (await fetch("ignoredMats.json")).json();
+        if (tempIgnored)
+            allIgnored = tempIgnored;
+    } catch {
+        console.warn("ignoredMats.json could not be loaded.")
+    }
+
+    // Associate input with Enter.
     document.getElementById("codigoMateria").addEventListener("keyup", (e) => {
         if (e.key === "Enter") loadPensum();
     });

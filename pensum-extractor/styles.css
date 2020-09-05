@@ -10,6 +10,11 @@
     --background1: #f7f7f7;
     --tableOdd   : rgba(96, 96, 255, 0.15);
     --bgCuat     : linear-gradient(90deg, transparent 0%, var(--tableOdd) 100%);
+    
+    --background-taken: rgb(125, 245, 135);
+    --background-taken-hover: rgb(7, 182, 22);
+    --background-taken-odd: rgba(55, 253, 71, 0.25);
+    --background-taken-even: rgba(55, 253, 71, 0.45);
 }
 
 html {
@@ -66,7 +71,7 @@ td {
     height: 2rem;
 }
 
-tr:nth-child(2n) td:not(.cuatHeader) {
+tr:nth-child(2n) td {
     background: var(--tableOdd)
 }
 
@@ -105,6 +110,10 @@ tr:nth-child(2n) td:not(.cuatHeader) {
     height  : 100%;
 }
 
+.disabled {
+    display: none;
+}
+
 @keyframes highlight {
     0% {
         background: #ffff99;
@@ -136,6 +145,13 @@ tr:nth-child(2n) td:not(.cuatHeader) {
 
 .preReq:hover {
     background: rgb(106, 109, 253);
+}
+
+.preReq.managementMode-taken {
+    background: var(--background-taken);
+}
+.preReq.managementMode-taken:hover {
+    background: var(--background-taken-hover);
 }
 
 .preReqExtra,
@@ -210,7 +226,25 @@ tr:nth-child(2n) td:not(.cuatHeader) {
         align-items   : center;
     }
 
-    .pensumWrapper {
+    #pensumWrapper {
         padding: 0;
     }
+}
+
+/* Interactivity */
+tr.managementMode-taken td {
+    /* tr is necessary, otherwise even cols would override this. */
+    background: var(--background-taken-odd);
+}
+
+tr.managementMode-taken:nth-child(even) td {
+    /* tr is necessary, otherwise even cols would override this. */
+    background: var(--background-taken-even);
+}
+
+
+
+/* ProgressWrapper */
+#progressWrapper:empty {
+    display: none;
 }
