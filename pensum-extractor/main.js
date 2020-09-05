@@ -782,10 +782,9 @@ function loadFromLocalStorage() {
 async function fetchHtmlAsText(url, opts = {}, forceProxy = -1) {
     const corsOverride = [
         'https://api.allorigins.win/raw?url=',
-        'https://yacdn.org/proxy/',
-        'https://crossorigin.me/',
-        'https://cors-anywhere.herokuapp.com/', // has request limit (200 per hour)
         'https://yacdn.org/serve/',
+        'https://cors-anywhere.herokuapp.com/', // has request limit (200 per hour)
+        'https://crossorigin.me/',
         'https://cors-proxy.htmldriven.com/?url=', // Fails with CORS (what!?)
         'https://thingproxy.freeboard.io/fetch/', // problems with https requests
         'http://www.whateverorigin.org/get?url=', // problems with https requests, deprecated?
