@@ -10,11 +10,11 @@
     --background1: #f7f7f7;
     --tableOdd   : rgba(96, 96, 255, 0.15);
     --bgCuat     : linear-gradient(90deg, transparent 0%, var(--tableOdd) 100%);
-    
-    --background-taken: rgb(125, 245, 135);
+
+    --background-taken      : rgb(125, 245, 135);
     --background-taken-hover: rgb(7, 182, 22);
-    --background-taken-odd: rgba(55, 253, 71, 0.25);
-    --background-taken-even: rgba(55, 253, 71, 0.45);
+    --background-taken-odd  : rgba(55, 253, 71, 0.25);
+    --background-taken-even : rgba(55, 253, 71, 0.45);
 }
 
 html {
@@ -150,6 +150,7 @@ tr:nth-child(2n) td {
 .preReq.managementMode-taken {
     background: var(--background-taken);
 }
+
 .preReq.managementMode-taken:hover {
     background: var(--background-taken-hover);
 }
@@ -187,14 +188,41 @@ tr:nth-child(2n) td {
     margin       : 0.2rem;
     border-radius: .25rem;
     cursor       : pointer;
+    font-size    : small;
+    text-align   : center;
 
-    background: rgb(84, 86, 235);
-    color     : white;
-    border    : none;
+    background     : rgb(84, 86, 235);
+    color          : white;
+    border         : none;
+    text-decoration: none;
 }
 
 .btn-primary:hover {
     background: rgb(45, 47, 182);
+}
+
+.btn-secondary {
+    display      : block;
+    padding      : .3rem .5rem;
+    margin       : 0.2rem;
+    border-radius: .25rem;
+    cursor       : pointer;
+    font-size    : small;
+    text-align   : center;
+
+    border         : none;
+    text-decoration: none;
+    color          : black;
+    background     : rgba(0, 0, 0, 0.05);
+    box-shadow     : inset 0 0 0 2px black;
+}
+
+.btn-secondary:hover {
+    background: rgba(0, 0, 0, 0.15);
+}
+
+.inline-btn-wrapper {
+    display: flex;
 }
 
 @media only screen and (max-width: 1000px) {
