@@ -250,6 +250,10 @@ function updateGradeProgress() {
     let node = document.getElementById('progressWrapper');
     node.innerHTML = '';
 
+    var n = (100 * progressData.currentCreds / progressData.totalCreds).toFixed(2);
+    let bg = `linear-gradient(to right, var(--progress-bar-green) ${n}%, var(--background) ${n}%)`;
+    node.style.backgroundImage = bg;
+
     if (progressData.currentCreds == 0) return;
 
     createElement(node, 'h3', 'Progreso en la carrera: ');
@@ -257,8 +261,6 @@ function updateGradeProgress() {
     let ul = createElement(node, 'ul');
 
     createElement(ul, 'li', `Materias aprobadas: ${progressData.currentMats}`);
-
-    var n = (100 * progressData.currentCreds / progressData.totalCreds).toFixed(2);
     createElement(ul, 'li', `Creditos aprobados: ${progressData.currentCreds} (${n}%)`);
     createElement(ul, 'li', `Creditos en total: ${progressData.totalCreds}`);
 

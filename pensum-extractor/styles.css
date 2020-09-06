@@ -13,10 +13,12 @@
     --bgCuat      : linear-gradient(90deg, transparent 0%, var(--tableOdd) 100%);
     --bgCuat-hover: rgba(96, 96, 255, 0.5);
 
-    --background-taken      : rgb(125, 245, 135);
+    --background-taken      : rgb(156, 247, 163);
     --background-taken-hover: rgb(7, 182, 22);
     --background-taken-odd  : rgba(55, 253, 71, 0.25);
     --background-taken-even : rgba(55, 253, 71, 0.45);
+
+    --progress-bar-green: #bfffcd;
 }
 
 html {
