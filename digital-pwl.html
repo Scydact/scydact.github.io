@@ -4,44 +4,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
     <title>Data to Pulse</title>
     <style>
         body {
             text-align: center;
-            font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
-            background: #222;
-            color: #ddd;
         }
 
         textarea {
-            background: black;
-            color: white;
             width: 80%;
             height: 20em;
             font-size: large;
             padding: 1em;
+        }
+        #out:focus-within {
+            background:deepskyblue;
+        }
+        form {
+            text-align: left;
+            margin: auto;
+            width: fit-content;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+        .spanfill {
+            grid-column-end: span 2;
         }
     </style>
 </head>
 
 <body>
     <!--
-REFERENCIA PARA PWL:
+PWL Reference:
 
-Unidades absolutas:
+Absolute units:
 PWL(0 0 100m 10 200m 10 300m 0)
 
-Unidades relativas:
+Relative units:
 PWL(0 0 +100m 10 +100m 10 +100m 0)
 
-Separacion por par:
+Pair of points:
 PWL(0 0) (+100m 10) (+100m 10) (+100m 0)
 
 Repeats:
 PWL repeat for 5((0 0) (+100m 10) (+100m 10) (+100m 0)) endrepeat
 PWL repeat forever((0 0) (+100m 10) (+100m 10) (+100m 0)) endrepeat
 
-File (formato csv o tsv)
+From a File (csv o tsv)
 PWL repeat for 5(FILE=pwl_file.txt) endrepeat
 
 Trigger:
@@ -50,33 +59,39 @@ PWL (0 0 .5 1 1 0) TRIGGER V(node)>1
 Scaling:
 PWL TIME_SCALE_FACTOR=0.5 VALUE_SCALE_FACTOR=2 (0 0 .5 1 1 0)
     -->
-    <h1>Generador de PWL con Data para LTspice</h1>
+    <h1>LTspice Data PWL command generator</h1>
     <div>
         <h2>Data</h2>
+        <p>Any character that is not 0/1 will be omitted.</p>
         <textarea id=data onchange="onInputChange()"></textarea>
     </div>
     <div>
-        <h2>Opciones</h2>
-        <label>Cantidad de Lineas a generar: </label>
-        <input id=iRandLines type="number" min=0 step=1 value=0>
-        <br>
-        <button onclick="randomizeInput()">Generar data aleatorea</button>
-        <br>
-        <label>Velocidad de bits (bps): </label>
-        <input id=iBps type="number" min=0 onchange="onInputChange()" value=1>
-        <br>
-        <label>Reducir puntos de PWL: </label>
-        <input id=compressPoints type="checkbox" onchange="onInputChange()" checked=true>
-        <br>
-        <label>Valor 0: </label>
-        <input id=val0 type="number" onchange="onInputChange()" value=0>
-        <br>
-        <label>Valor 1: </label>
-        <input id=val1 type="number" onchange="onInputChange()" value=1>
+        <h2>Random data options</h2>
+        <form action="javascript:void(0);">
+            <label>Lines to generate: </label>
+            <input id=iRandLines type="number" min=0 step=1 value=0>
+
+            <button class=spanfill onclick="randomizeInput()">Fill with random data</button>
+        </form>
+        <h2>PWL command options</h2>
+        <form action="javascript:void(0);">
+            <label>Bit rate (bps): </label>
+            <input id=iBps type="number" min=0 onchange="onInputChange()" value=1>
+
+            <label>Minimize PWL cmd: </label>
+            <input id=compressPoints type="checkbox" onchange="onInputChange()" checked=true>
+
+            <label>Low bit voltage: </label>
+            <input id=val0 type="number" onchange="onInputChange()" value=0>
+
+            <label>High bit voltage: </label>
+            <input id=val1 type="number" onchange="onInputChange()" value=1>
+
+        </form>
     </div>
     <div>
         <h2>Output</h2>
-        <p>Click en el cuadro de texto para copiar...</p>
+        <p>Click on the textbox to copy</p>
         <textarea id=out readonly onclick="copyToClip(this.value)"></textarea>
     </div>
 
@@ -134,8 +149,8 @@ PWL TIME_SCALE_FACTOR=0.5 VALUE_SCALE_FACTOR=2 (0 0 .5 1 1 0)
             if (!compressPointsNode.checked) {
                 // Uncompressed
                 for (let i = 0; i < l; i++) {
-                    pairs.push(`(${i+almostNone} ${vals[data[i]]})`);
-                    pairs.push(`(${i+1} ${vals[data[i]]})`);
+                    pairs.push(`(${i + almostNone} ${vals[data[i]]})`);
+                    pairs.push(`(${i + 1} ${vals[data[i]]})`);
                 }
             } else {
                 // Check last bit
@@ -146,7 +161,7 @@ PWL TIME_SCALE_FACTOR=0.5 VALUE_SCALE_FACTOR=2 (0 0 .5 1 1 0)
                     const curr = data[i];
                     if (lastBit != curr) {
                         pairs.push(`(${i} ${vals[lastBit]})`);
-                        pairs.push(`(${i+almostNone} ${vals[curr]})`);
+                        pairs.push(`(${i + almostNone} ${vals[curr]})`);
                         lastBit = curr;
                     }
                     i++;
