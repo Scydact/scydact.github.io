@@ -1,0 +1,54 @@
+:root {
+    --border-radius: 1em;
+    --box-shadow: 0 0 1em rgba(0,0,0,0.05);
+}
+main {
+    margin: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px,1fr));
+    grid-auto-flow: dense;
+}
+main article {
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    border: 1px solid rgba(0,0,0,0.12);
+    padding: 1.5em;
+    margin: 1.5em;
+}
+main article h4 {
+    text-align: center;
+    font-size: larger;
+    padding-bottom: .4em;
+    border-bottom: 2px solid black;
+}
+@media only screen and (min-width: 800px) {
+    main article.landscape {
+        grid-column-end: span 2;
+    }
+}
+
+/* formula stuff */
+formula {
+    display: flex;
+    flex-direction: column;
+}
+formula .output,
+formula .inputs {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    grid-auto-rows: 2em;
+    column-gap: 1em;
+    text-align: right;
+    align-items: center;
+    padding: 0.25em 0;
+    border-bottom: 1px solid rgba(0,0,0,0.3);
+}
+formula .output input,
+formula .inputs input {
+    height: 100%;
+}
+formula .formula-static {font-size: 150%}
+formula mjx-container {
+    font-size: 100% !important;
+}
+

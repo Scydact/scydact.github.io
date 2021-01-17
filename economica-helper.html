@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Helper Ing. Económica</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="economica-helper.css">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <!-- 
+        SVG has hinting issues!
+        <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script> 
+    -->
+    <!-- Use CHTML -->
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.0.1/es5/tex-chtml.js"></script>
+    <script>
+        // Mathjax init
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']]
+            },
+            svg: {
+                fontCache: 'global'
+            }
+        };
+    </script>
+    <script>
+        function updateMathContent(...s) {
+            if (MathJax && MathJax.typeset) MathJax.typeset([s]);
+        }
+        function changeContent() {
+            let x = document.getElementById('lorem')
+            let i = Math.floor(mathstr.length * Math.random());
+            x.innerHTML = '$$' + mathstr[i] + '$$';
+            updateMathContent(x);
+        }
+
+        function createNode(element, content, attributes = {}) {
+            let x = document.createElement(element);
+            if (typeof (content) === 'string')
+                content = document.createTextNode(content);
+            if (content)
+                x.appendChild(content);
+            for (attrName in attributes) {
+                let attrVal = attributes[attrName];
+                x.setAttribute(attrName, attrVal);
+            }
+            return x;
+        }
+
+        function buildFormula(opts) {
+            // let sample = 
+            let w = createNode('formula');
+            let { param, out, formula } = opts;
+
+            // Formula subdivs
+            let div_formula_static = createNode('div', formula.tex, { class: 'formula-static' });
+            let div_formula_dynamic = createNode('div', null, { class: 'formula-dynamic' });
+            let div_inputs = createNode('div', null, { class: 'inputs' });
+            let div_output = createNode('div', null, { class: 'output' });
+
+            /** Functions that updates both dynamic_values and its HTML node values. */
+            let dynamic_values_update = [];
+            /** Stores the calculated output values. Updated by dynamic_values_update[]() */
+            let dynamic_values = {};
+            /** Stores the input values. Gets updated by each <input> node.*/
+            let dynamic_parameters = {};
+
+            let updateValues = () => {
+                for (let v of dynamic_values_update)
+                    v(dynamic_parameters);
+            }
+
+            let render = () => {
+                updateValues();
+                let tex = formula.dynamic(dynamic_parameters, dynamic_values);
+                div_formula_dynamic.innerHTML = tex;
+                updateMathContent(div_formula_dynamic);
+            }
+
+            // Create outputs
+            for (let outName in out) {
+                let outSpecs = out[outName];
+                let { name = outName, value = () => 0 } = outSpecs;
+
+                div_output.appendChild(createNode('label', name));
+                let x = createNode('input', null, {
+                    type: 'text',
+                    disabled: 'true',
+                });
+                div_output.appendChild(x);
+
+                dynamic_values_update.push((v) => {
+                    let newValue = value(v)
+                    dynamic_values[outName] = newValue;
+                    x.value = newValue;
+                });
+            }
+
+            // Create form and event listener from parameters
+            for (let paramName in param) {
+                let paramSpecs = param[paramName];
+                let { name = paramName, value = 0 } = paramSpecs;
+
+                dynamic_parameters[paramName] = value;
+
+                let x = createNode('input', null, {
+                    type: 'number',
+                    value: 'value',
+                    ...paramSpecs,
+                });
+                x.addEventListener('change', (x) => {
+                    dynamic_parameters[paramName] = parseFloat(x.target.value);
+                    render();
+                })
+
+                div_inputs.appendChild(createNode('label', name));
+                div_inputs.appendChild(x);
+            }
+
+            // Append and return
+            w.appendChild(div_formula_static);
+            w.appendChild(div_inputs);
+            w.appendChild(div_output);
+            w.appendChild(div_formula_dynamic);
+
+            // Call render once after all dynamic_parameters have been set.
+            updateMathContent(div_formula_static);
+            render();
+
+            return w;
+        }
+
+        function insertAfter(referenceNode, newNode) {
+            referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
+        }
+        function insertBefore(referenceNode, newNode) {
+            referenceNode.parentNode.insertBefore(newNode, referenceNode);
+        }
+
+        let mathjax_script = document.getElementById('MathJax-script');
+
+        function formformula(opts) {
+            let x = document.currentScript;
+            console.log('before!');
+            mathjax_script.addEventListener('load', () => {
+                console.log('loaded!');
+                let y = buildFormula(opts);
+                console.log(y);
+                //insertAfter(x, y);
+                insertBefore(x, y);
+            });
+        }
+        const format = (num, fraction = 2) => new Intl.NumberFormat([], {
+            minimumFractionDigits: fraction,
+            maximumFractionDigits: fraction,
+        }).format(num);
+    </script>
+</head>
+
+<body>
+    <h1>Helper Ing. Económica</h1>
+    <main>
+        <article class='landscape' style="background-color: #FDEDEC;">
+            <h4>Factor fundamental: Interés compuesto (F/P)</h4>
+            <p><b>Nota:</b> Para simular el factor P/F, usar periodo negativo
+                y asumir que la entrada $\textrm{VP=VF}$, y la salida $\textrm{VF=VP}$.
+            </p>
+            <script>
+                formformula({
+                    param: {
+                        i: { name: 'Interes (i%)', value: 15 },
+                        n: { name: 'Periodo (n)', value: 1, step: 1 },
+                        P: { name: 'Valor presente (P)', value: 100 },
+                    },
+                    out: {
+                        F: {
+                            name: 'Valor futuro (F)',
+                            value: (p) => format(p.P * (1 + p.i / 100) ** p.n),
+                        },
+                    },
+                    formula: {
+                        tex: '$$\\textrm{F} = \\textrm{P}\\cdot(1+i)^n$$',
+                        dynamic: (p, v) => `$$ \\textrm{F} = (${p.P})(1 + ${p.i / 100})^{${p.n}} = ${v.F}$$`,
+                    },
+                });
+            </script>
+        </article>
+
+        <article style="background-color: #FDF6EC">
+            <h4>Factor de recuperación de capital (FRC o A/P)</h4>
+            <script>
+                formformula({
+                    param: {
+                        i: { name: 'Interes (i%)', value: 15 },
+                        n: { name: 'Periodo (n)', value: 1, step: 1 },
+                        P: { name: 'Valor presente (P)', value: 100 },
+                    },
+                    out: {
+                        A: {
+                            name: 'Anualidad (A)',
+                            value: (p) => { let x = (1 + p.i / 100) ** p.n; return format(p.P * ((p.i / 100) * x) / (x - 1)) },
+                        },
+                    },
+                    formula: {
+                        tex: '$$P = A\\left[\\frac{(1+i)^n-1}{i(1+i)^n}\\right]$$',
+                        dynamic: (p, v) => `$$A = ${p.P}\\left[\\frac{${p.i / 100}(1+${p.i / 100})^{${p.n}}}{(1+${p.i / 100})^{${p.n}}-1}\\right]=${v.A}$$`,
+                    },
+                });
+            </script>
+        </article>
+
+        <article style="background-color: #FDF6EC">
+            <h4>Factor de valor presente de serie uniforme (FVPSU o P/A)</h4>
+            <script>
+                formformula({
+                    param: {
+                        i: { name: 'Interes (i%)', value: 15 },
+                        n: { name: 'Periodo (n)', value: 1, step: 1 },
+                        A: { name: 'Anualidad (A)', value: 100 },
+                    },
+                    out: {
+                        P: {
+                            name: 'Valor presente (P)',
+                            value: (p) => { let x = (1 + p.i / 100) ** p.n; return format(p.A * (x - 1) / ((p.i / 100) * x)) },
+                        },
+                    },
+                    formula: {
+                        tex: '$$P = A\\left[\\frac{(1+i)^n-1}{i(1+i)^n}\\right]$$',
+                        dynamic: (p, v) => `$$P = ${p.A}\\left[\\frac{(1+${p.i / 100})^{${p.n}}-1}{${p.i / 100}(1+${p.i / 100})^{${p.n}}}\\right]=${v.P}$$`,
+                    },
+                });
+            </script>
+        </article>
+
+        <article style="background-color: #ECFDF6">
+            <h4>Factor de fondo de amortización (A/F):</h4>
+            <script>
+                formformula({
+                    param: {
+                        i: { name: 'Interes (i%)', value: 15 },
+                        n: { name: 'Periodo (n)', value: 1, step: 1 },
+                        F: { name: 'Valor futuro (F)', value: 100 },
+                    },
+                    out: {
+                        A: {
+                            name: 'Anualidad (A)',
+                            value: (p) => format(p.F * (p.i / 100) / ((1 + p.i / 100) ** p.n - 1)),
+                        },
+                    },
+                    formula: {
+                        tex: '$$A = F\\left[\\frac{i}{(1+i)^n-1}\\right]$$',
+                        dynamic: (p, v) => `$$A = ${p.F}\\left[\\frac{${p.i / 100}}{(1+${p.i / 100})^{${p.n}}-1}\\right]=${v.A}$$`,
+                    },
+                });
+            </script>
+        </article>
+
+        <article style="background-color: #ECFDF6">
+            <h4>Factor de cantidad compuesta de una serie uniforme (FCCSU o F/A):</h4>
+            <script>
+                formformula({
+                    param: {
+                        i: { name: 'Interes (i%)', value: 15 },
+                        n: { name: 'Periodo (n)', value: 1, step: 1 },
+                        A: { name: 'Anualidad (A)', value: 100 },
+                    },
+                    out: {
+                        F: {
+                            name: 'Valor futuro (F)',
+                            value: (p) => format(p.A * ((1 + p.i / 100) ** p.n - 1) / (p.i / 100)),
+                        },
+                    },
+                    formula: {
+                        tex: '$$F = A\\left[\\frac{(1+i)^n-1}{i}\\right]$$',
+                        dynamic: (p, v) => `$$F = ${p.A}\\left[\\frac{(1+${p.i / 100})^{${p.n}}-1}{${p.i / 100}}\\right]=${v.F}$$`,
+                    },
+                });
+            </script>
+        </article>
+
+    </main>
+</body>
+
+</html>
