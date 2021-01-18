@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de diagrama de flujo de efectivo</title>
+    <script defer src="https://unpkg.com/canvg@3.0.1/lib/umd.js"></script>
+    <script defer src="economica-flow.js"></script>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <h1>Generador de diagrama de flujo de efectivo</h1>
+    <div id=commands>
+        <h3>Commands:</h3>
+        <ul>
+            <li>t X: set the current time period to X.</li>
+            <li>tr X: "skip" X time steps (relative movement).</li>
+            <li>X: set a period to X.</li>
+            <li>m TEXT: sets a text (message) at this period.</li>
+            <li>ma TEXT: sets a text (message) at the previous period.</li>
+            <li>% TEXT: Comment, ignored by the parser.</li>
+            <li>h TEXT: Sets the graph's title.</li>
+            <li>mult X: Sets a global multiplier for the money</li>
+        </ul>
+        <h3>Multiple commands per line:</h3>
+        <ul>
+            <li>X X X: Sets level to A, B, and then C.</li>
+            <li>X X t Y X: Sets X, X on same t, changes to t=Y and then sets X on t=y.</li>
+            <li>Any text command (m, %, h...) will assume the rest of the line as the text.</li>
+        </ul>
+    </div>
+    <textarea id=txtinput>
+1
+2
+3
+4
+-5
+-4
+-3
+-2
+</textarea>
+    <div id=log></div>
+    <div id=canvasWrapper>
+        <svg id=canvas width=700 height=400></svg>
+    </div>
+</body>
+
+</html>
