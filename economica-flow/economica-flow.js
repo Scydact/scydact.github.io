@@ -161,12 +161,12 @@ function drawArrows(flow, parent, text_text_parent, text_number_parent) {
     let arrow_dx = 10;
 
     for (let i = 0; i < n; ++i) {
-        let time = flow.keys[i];
-        if (time !== undefined && flow.values[time]) {
+        let time = i + flow.start;
+        if (flow.values[time]) {
             let value = flow.numValues[time];
             // let numValues = values.filter(x => typeof (x) !== 'string');
 
-            let x0 = dx * time;
+            let x0 = dx * i;
             let dy = Math.sign(value) * Math.max(minSize, Math.abs(value) / abs);
             drawArrow(parent, x0, dy);
             drawArrowTextNumber(
