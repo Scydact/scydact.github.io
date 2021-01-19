@@ -33,3 +33,7 @@ footer {
     margin-top: 3em;
     opacity: 0.5;
 }
+
+.hidden {
+    display: none;
+}
