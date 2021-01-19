@@ -18,6 +18,7 @@ textarea {
 }
 .options {
     margin: 1em 0;
+    min-height: 450px;
 }
 
 .card {
