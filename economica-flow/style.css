@@ -38,3 +38,11 @@ footer {
 .hidden {
     display: none;
 }
+
+button {
+    padding: 1em;
+}
+
+svg text {
+    user-select: none;
+}

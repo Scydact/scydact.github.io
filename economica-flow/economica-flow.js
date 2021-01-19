@@ -2,6 +2,10 @@ let svg = document.getElementById('canvas');
 let textareaData = document.getElementById('txtinput');
 let textareaStyle = document.getElementById('styleinput');
 let hiddenBuffer = document.getElementById('hiddenBuffer');
+SETTINGS_NODES = {
+    size: document.getElementById('size_y'),
+    transparency: document.getElementById('transparency'),
+}
 
 const SVG = 'http://www.w3.org/2000/svg';
 const [WIDTH, HEIGHT] = [700, 400];
@@ -240,12 +244,12 @@ function drawArrowTextNumber(text_number_parent, x, size, flow, time) {
             'text-anchor': text_anchor,
             transform: `translate(${xn},${yn}) rotate(90)`,
             class: 'text-small',
-        }, 
-        `(${numbers.join('+').replaceAll('+-', '-')})`);
+        },
+            `(${numbers.join('+').replaceAll('+-', '-')})`);
 
         addSVGNode(text_number_parent, 'text', {
             'text-anchor': text_anchor,
-            transform: `translate(${xn+textMargin[0]},${yn}) rotate(90)`,
+            transform: `translate(${xn + textMargin[0]},${yn}) rotate(90)`,
         }, result);
 
     } else {
@@ -345,7 +349,24 @@ function getSvgBlob(svg) {
     return new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
 }
 
-async function getPngBlobAsync(svg, scale = 2) {
+function fillAlpha(ctx, bgColor) {  // bgColor is a valid CSS color ctx is 2d context
+    // save state
+    ctx.save();
+    // make sure defaults are set
+    ctx.globalAlpha = 1;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.filter = "none";
+
+    // fill transparent pixels with bgColor
+    ctx.globalCompositeOperation = "destination-over";
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+    // cleanup
+    ctx.restore();
+}
+
+async function getPngBlobAsync(svg, scale = 2, forceRemoveTransparency = false) {
     //when using on another file, change hiddenBuffer to some hidden space on Document.
     let size = [WIDTH, HEIGHT].map(x => parseInt(x * scale));
     clearNode(hiddenBuffer);
@@ -364,6 +385,7 @@ async function getPngBlobAsync(svg, scale = 2) {
     let loadPromise = new Promise((resolve) => {
         let img = new Image();
         img.onload = async function () {
+            if (!SETTINGS_NODES.transparency.checked || forceRemoveTransparency) fillAlpha(ctx, 'white');
             ctx.drawImage(img, 0, 0, size[0], size[1]);
             await canvas.toBlob(resolve, 'image/png');
         }
@@ -399,14 +421,27 @@ function downloadFile(blob, filename) {
     }, 100);
 }
 
+async function copyBlobToClipboard(blob) {
+    await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+}
+
 const FILENAME = 'diagrama_flujo';
 function getScale() {
-    let v = document.getElementById('size_y').value;
+    let v = SETTINGS_NODES.size.value;
     return parseFloat(v) / HEIGHT;
 }
 const DOWNLOADS = {
     png: async () => downloadFile(await getPngBlobAsync(svg, getScale()), FILENAME + '.png'),
     svg: async () => downloadFile(getSvgBlob(svg), FILENAME + '.svg'),
+}
+const OTHER = {
+    clipboard: async () => copyBlobToClipboard(await getPngBlobAsync(svg, getScale(), true)),
+    newTab: async () => {
+        const blob = getSvgBlob(svg);//await getPngBlobAsync(svg, getScale());
+        const blobUrl = URL.createObjectURL(blob);
+        let x = window.open(blobUrl, '_blank');
+        x.onbeforeunload = () => URL.revokeObjectURL(blobUrl);
+    },
 }
 //#endregion
 
@@ -432,23 +467,26 @@ const DEFAULT_VALUES = {
     m Trimestre
     ma sin pagar
     `.trim().split('\n').map(x => x.trim()).join('\n'),//[100, 200, 300, 400, 500].join('\n'),
-    size: HEIGHT * 4,
+    size: HEIGHT * 3,
+    transparency: false,
 }
 let SAVED_VALUES;
 let SAVE_COOKIES = true;
 async function loadCookies() {
     let x = localStorage.getItem(COOKIE_NAME);
-    SAVED_VALUES = (x) ? JSON.parse(x) : Object.assign({},DEFAULT_VALUES);
+    SAVED_VALUES = { ...DEFAULT_VALUES, ...JSON.parse(x) };
 
-    document.getElementById('size_y').value = SAVED_VALUES.size;
     textareaData.value = SAVED_VALUES.data;
+    SETTINGS_NODES.size.value = SAVED_VALUES.size;
+    SETTINGS_NODES.transparency.checked = SAVED_VALUES.transparency
     setCss(SAVED_VALUES.style);
 }
 function saveCookies() {
     SAVED_VALUES = {
         style: getCss(),
         data: textareaData.value,
-        size: document.getElementById('size_y').value,
+        size: parseInt(SETTINGS_NODES.size.value),
+        transparency: SETTINGS_NODES.transparency.checked,
     }
     if (SAVE_COOKIES)
         localStorage.setItem(COOKIE_NAME, JSON.stringify(SAVED_VALUES));
@@ -487,13 +525,13 @@ let renderGroup = {
 }
 
 // First render
-window.addEventListener('load',async() => {
+window.addEventListener('load', async () => {
     DEFAULT_VALUES.style = await getDefaultCss();
 
     loadCookies();
     render();
     textareaData.addEventListener('input', (x) => render(x.target.value));
     textareaStyle.addEventListener('input', appendCss);
-    
-    window.addEventListener('beforeunload',saveCookies);
+
+    window.addEventListener('beforeunload', saveCookies);
 })

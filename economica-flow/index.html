@@ -20,7 +20,7 @@
         <div class='tab'>
             <button class='tab-link'>Commands</button>
             <button class='tab-link'>Plot Style</button>
-            <button class='tab-link'>Downloads</button>
+            <button class='tab-link'>Export</button>
         </div>
         <div id='commands' class='tab-content'>
             <h3>Commands:</h3>
@@ -82,10 +82,18 @@
         </div>
 
         <div class='tab-content'>
-            <h3>Downloads</h3>
+            <h3>Export settings:</h3>
             <label>Size (Y): </label><input id="size_y" type="number"/>
+            <br>
+            <label for="transparency">Transparency: </label><input type="checkbox" id="transparency"/>
+            
+            <h3>Downloads</h3>
             <button onclick="DOWNLOADS.png()">PNG</button>
             <button onclick="DOWNLOADS.svg()">SVG</button>
+
+            <h3>Other</h3>
+            <button onclick="OTHER.clipboard()">Copy to clipboard</button>
+            <button onclick="OTHER.newTab()">Open in new tab</button>
         </div>
     </div>
 
