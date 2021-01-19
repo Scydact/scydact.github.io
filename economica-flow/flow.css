@@ -1,0 +1,20 @@
+.baseline,
+.arrows {
+    stroke-width: 3;
+    stroke      : black;
+    fill        : none;
+}
+
+.timestamps {
+    font: 15px sans-serif;
+}
+
+.arrows-text-number {
+    font: bold 20px sans-serif;
+}
+.arrows-text-text {
+    font: 20px sans-serif;
+}
+.text-title {
+    font: 32px sans-serif;
+}

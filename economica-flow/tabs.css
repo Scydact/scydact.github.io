@@ -1,0 +1,18 @@
+.tab-content.disabled {
+    display: none;
+}
+.tab {
+    border-bottom: 1px solid gray;
+}
+.tab-link {
+    border: none;
+    padding: 1em 2em 0.7em;
+    background: rgba(128,128,128,0.3);
+    font-size: medium;
+}
+.tab-link:hover {
+    background: rgba(128,128,128,0.5);
+}
+.tab-link.active {
+    background: rgba(128,128,128,0.7);;
+}

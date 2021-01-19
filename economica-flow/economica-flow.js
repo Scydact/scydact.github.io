@@ -1,5 +1,7 @@
 let svg = document.getElementById('canvas');
-let textarea = document.getElementById('txtinput');
+let textareaData = document.getElementById('txtinput');
+let textareaStyle = document.getElementById('styleinput');
+let hiddenBuffer = document.getElementById('hiddenBuffer');
 
 const SVG = 'http://www.w3.org/2000/svg';
 const [WIDTH, HEIGHT] = [700, 400];
@@ -286,7 +288,7 @@ function drawMeta(flow, parent) {
     }
 }
 
-function render(data = textarea.value) {
+function render(data = textareaData.value) {
     let flow = processInput(data);
     for (let x in renderGroup)
         clearNode(renderGroup[x]);
@@ -302,41 +304,150 @@ function render(data = textarea.value) {
     drawMeta(flow, renderGroup.title);
 }
 
-async function getCss() {
-    return await (await fetch('style.css')).text()
+//#region EXPORT AS PNG + style config
+function getCss() {
+    let style = textareaStyle.value;
+    if (style.trim() !== '') return style;
+
+    let defaultStyle = DEFAULT_VALUES.style;
+    textareaStyle.value = defaultStyle;
+    return defaultStyle;
 }
-async function appendCss() {
+
+async function getDefaultCss() {
+    let x = await (await fetch('flow.css')).text();
+    return x;
+}
+function setCss(str) {
+    textareaStyle.value = str;
+    appendCss();
+}
+
+function appendCss() {
     let stylenode = svg.getElementById('svg-style');
     if (!stylenode) {
-        stylenode = document.createElementNS(SVG,'style');
+        stylenode = document.createElementNS(SVG, 'style');
+        stylenode.id = 'svg-style';
         svg.appendChild(stylenode);
     }
-    stylenode.innerHTML = await getCss();
+    stylenode.innerHTML = getCss();
 }
-async function getPng() {
-    await appendCss();
+
+function getSvgBlob(svg) {
     let svgString = new XMLSerializer().serializeToString(svg);
-    let canvas = document.createElement('canvas');
-    document.body.appendChild(canvas);
-    canvas.width = 2*WIDTH;
-    canvas.height = 2*HEIGHT;
-    let ctx = canvas.getContext('2d');
-    let DOMURL = self.URL || self.webkitURL || self;
-    let img = new Image();
-    let svgblob = new Blob([svgString], {type: 'image/svg+xml;charset=utf-8'});
-    let url = DOMURL.createObjectURL(svgblob);
-    img.onload = function() {
-        ctx.drawImage(img, 0, 0, 2*WIDTH, 2*HEIGHT);
-        let png = canvas.toDataURL('image/png');
-        let pngtag = document.createElement('img');
-        pngtag.src = png;
-        document.body.appendChild(pngtag);
-        DOMURL.revokeObjectURL(png);
-    }
-    img.src = url;
+    return new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
 }
 
+async function getPngBlobAsync(svg, scale = 2) {
+    //when using on another file, change hiddenBuffer to some hidden space on Document.
+    let size = [WIDTH, HEIGHT].map(x => parseInt(x * scale));
+    clearNode(hiddenBuffer);
 
+    let svgblob = getSvgBlob(svg);
+
+    let canvas = document.createElement('canvas');
+    hiddenBuffer.appendChild(canvas);
+    canvas.width = size[0];
+    canvas.height = size[1];
+    let ctx = canvas.getContext('2d');
+
+    let DOMURL = self.URL || self.webkitURL || self;
+    let url = DOMURL.createObjectURL(svgblob);
+
+    let loadPromise = new Promise((resolve) => {
+        let img = new Image();
+        img.onload = async function () {
+            ctx.drawImage(img, 0, 0, size[0], size[1]);
+            await canvas.toBlob(resolve, 'image/png');
+        }
+        img.src = url;
+    });
+
+    return await loadPromise;
+}
+
+function downloadFile(blob, filename) {
+    // SRC: https://gist.github.com/davalapar/d0a5ba7cce4bc599f54800da22926da2
+
+    // Other browsers
+    // Create a link pointing to the ObjectURL containing the blob
+    const blobURL = window.URL.createObjectURL(blob);
+    const tempLink = document.createElement('a');
+    tempLink.style.display = 'none';
+    tempLink.href = blobURL;
+    tempLink.setAttribute('download', filename);
+    // Safari thinks _blank anchor are pop ups. We only want to set _blank
+    // target if the browser does not support the HTML5 download attribute.
+    // This allows you to download files in desktop safari if pop up blocking
+    // is enabled.
+    if (typeof tempLink.download === 'undefined') {
+        tempLink.setAttribute('target', '_blank');
+    }
+    document.body.appendChild(tempLink);
+    tempLink.click();
+    document.body.removeChild(tempLink);
+    setTimeout(() => {
+        // For Firefox it is necessary to delay revoking the ObjectURL
+        window.URL.revokeObjectURL(blobURL);
+    }, 100);
+}
+
+const FILENAME = 'diagrama_flujo';
+function getScale() {
+    let v = document.getElementById('size_y').value;
+    return parseFloat(v) / HEIGHT;
+}
+const DOWNLOADS = {
+    png: async () => downloadFile(await getPngBlobAsync(svg, getScale()), FILENAME + '.png'),
+    svg: async () => downloadFile(getSvgBlob(svg), FILENAME + '.svg'),
+}
+//#endregion
+
+//#region COOKIES
+const COOKIE_NAME = 'economica-flow-v0';
+const DEFAULT_VALUES = {
+    style: '',
+    data: `
+5000
+-1500 m Cookies
+-500 
++1000
+tr 0 m
+tr 0 m Pizza
+-800
+-800
+tr 2
+1500
+
+h Flujo
+    `.trim(),//[100, 200, 300, 400, 500].join('\n'),
+    size: HEIGHT * 4,
+}
+let SAVED_VALUES;
+let SAVE_COOKIES = true;
+async function loadCookies() {
+    let x = localStorage.getItem(COOKIE_NAME);
+    SAVED_VALUES = (x) ? JSON.parse(x) : Object.assign({},DEFAULT_VALUES);
+
+    document.getElementById('size_y').value = SAVED_VALUES.size;
+    textareaData.value = SAVED_VALUES.data;
+    setCss(SAVED_VALUES.style);
+}
+function saveCookies() {
+    SAVED_VALUES = {
+        style: getCss(),
+        data: textareaData.value,
+        size: document.getElementById('size_y').value,
+    }
+    if (SAVE_COOKIES)
+        localStorage.setItem(COOKIE_NAME, JSON.stringify(SAVED_VALUES));
+}
+function removeCookies() {
+    localStorage.removeItem(COOKIE_NAME);
+}
+//#endregion
+
+//#region ONLOAD RUN
 // Basic draw
 let baseline = addSVGNode(svg, 'line', {
     x1: 0,
@@ -365,5 +476,13 @@ let renderGroup = {
 }
 
 // First render
-render();
-textarea.addEventListener('input', (x) => render(x.target.value));
+window.addEventListener('load',async() => {
+    DEFAULT_VALUES.style = await getDefaultCss();
+
+    loadCookies();
+    render();
+    textareaData.addEventListener('input', (x) => render(x.target.value));
+    textareaStyle.addEventListener('input', appendCss);
+    
+    window.addEventListener('beforeunload',saveCookies);
+})

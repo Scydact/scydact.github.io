@@ -9,43 +9,109 @@
     <script defer src="economica-flow.js"></script>
     <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="style.css">
+
+    <link rel="stylesheet" href="tabs.css">
+    <script defer src="tabs.js"></script>
 </head>
 
 <body>
     <h1>Generador de diagrama de flujo de efectivo</h1>
-    <div id=commands>
-        <h3>Commands:</h3>
-        <ul>
-            <li>t X: set the current time period to X.</li>
-            <li>tr X: "skip" X time steps (relative movement).</li>
-            <li>X: set a period to X.</li>
-            <li>m TEXT: sets a text (message) at this period.</li>
-            <li>ma TEXT: sets a text (message) at the previous period.</li>
-            <li>% TEXT: Comment, ignored by the parser.</li>
-            <li>h TEXT: Sets the graph's title.</li>
-            <li>mult X: Sets a global multiplier for the money</li>
-        </ul>
-        <h3>Multiple commands per line:</h3>
-        <ul>
-            <li>X X X: Sets level to A, B, and then C.</li>
-            <li>X X t Y X: Sets X, X on same t, changes to t=Y and then sets X on t=y.</li>
-            <li>Any text command (m, %, h...) will assume the rest of the line as the text.</li>
-        </ul>
+    <div class='tab-wrapper options card'>
+        <div class='tab'>
+            <button class='tab-link'>Commands</button>
+            <button class='tab-link'>Plot Style</button>
+            <button class='tab-link'>Downloads</button>
+        </div>
+        <div id='commands' class='tab-content'>
+            <h3>Commands:</h3>
+            <table>
+                <tr>
+                    <td>t X</td>
+                    <td>Set the current time period to X.</td>
+                </tr>
+                <tr>
+                    <td>tr X</td>
+                    <td>"skip" X time steps (relative movement).</td>
+                </tr>
+                <tr>
+                    <td>X</td>
+                    <td>Set a period to X.</td>
+                </tr>
+                <tr>
+                    <td>m TEXT</td>
+                    <td>Sets a text (message) at this period.</td>
+                </tr>
+                <tr>
+                    <td>ma TEXT</td>
+                    <td>Sets a text (message) at the previous period.</td>
+                </tr>
+                <tr>
+                    <td>% TEXT</td>
+                    <td>Comment, ignored by the parser.</td>
+                </tr>
+                <tr>
+                    <td>h TEXT</td>
+                    <td>Sets the graph's title.</td>
+                </tr>
+                <tr>
+                    <td>mult X</td>
+                    <td>Sets a global multiplier for the money</td>
+                </tr>
+            </table>
+            <h3>Multiple commands per line:</h3>
+            <table>
+                <tr>
+                    <td>X X X</td>
+                    <td>Sets level to A, B, and then C.</td>
+                </tr>
+                <tr>
+                    <td>X X t Y X</td>
+                    <td>Sets X, X on same t, changes to t=Y and then sets X on t=y.</td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </table>
+            <p>Any text command (m, %, h...) will assume the rest of the line as the text.</p>
+        </div>
+
+        <div class='tab-content'>
+            <h3>Plot style</h3>
+            <p>
+                Change the CSS style of the plot here.
+                <br>(Remove all to reset to defaults)
+            </p>
+            <textarea id='styleinput'></textarea>
+        </div>
+
+        <div class='tab-content'>
+            <h3>Downloads</h3>
+            <label>Size (Y): </label><input id="size_y" type="number"/>
+            <button onclick="DOWNLOADS.png()">PNG</button>
+            <button onclick="DOWNLOADS.svg()">SVG</button>
+        </div>
     </div>
-    <textarea id=txtinput>
-1
-2
-3
-4
--5
--4
--3
--2
-</textarea>
+
+
+    <div class='card'>
+        <h2>Plot Data</h2>
+        <button onclick="
+        document.getElementById('txtinput').value=DEFAULT_VALUES.data;
+        render();
+        ">Reset</button>
+        <textarea id=txtinput></textarea>
+    </div>
+
     <div id=log></div>
-    <div id=canvasWrapper>
-        <svg id=canvas width=700 height=400></svg>
+    <div id=canvasWrapper class='card'>
+        <svg id=canvas></svg>
     </div>
+
+    <div id='hiddenBuffer' class='hidden'></div>
+    <footer>
+        Scydact 2021.
+    </footer>
 </body>
 
 </html>
