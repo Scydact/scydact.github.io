@@ -234,12 +234,19 @@ function drawArrowTextNumber(text_number_parent, x, size, flow, time) {
     let yn = (HEIGHT / 2) * (1 - size) + textMargin[1];
 
     if (numbers.length > 1) {
-        let msg = numbers.join('+').replaceAll('+-', '-') + '=' + result;
-        let opts = {
-            'text-anchor': (Math.sign(result) > 0) ? 'start' : 'end',
+        let text_anchor = (Math.sign(result) > 0) ? 'start' : 'end';
+
+        addSVGNode(text_number_parent, 'text', {
+            'text-anchor': text_anchor,
             transform: `translate(${xn},${yn}) rotate(90)`,
-        }
-        addSVGNode(text_number_parent, 'text', opts, msg)
+            class: 'text-small',
+        }, 
+        `(${numbers.join('+').replaceAll('+-', '-')})`);
+
+        addSVGNode(text_number_parent, 'text', {
+            'text-anchor': text_anchor,
+            transform: `translate(${xn+textMargin[0]},${yn}) rotate(90)`,
+        }, result);
 
     } else {
         let msg = numbers[0].toString();
@@ -408,19 +415,23 @@ const COOKIE_NAME = 'economica-flow-v0';
 const DEFAULT_VALUES = {
     style: '',
     data: `
-5000
--1500 m Cookies
--500 
-+1000
-tr 0 m
-tr 0 m Pizza
--800
--800
-tr 2
-1500
+    h Flujo
 
-h Flujo
-    `.trim(),//[100, 200, 300, 400, 500].join('\n'),
+    5000 -200 -300 -2400
+    -1500 m Cookies
+    -500 
+    +1000 m Pizza
+    -800
+    -800
+
+    % Mover 3 sin pagar
+    tr 3
+    1500
+
+    t 7
+    m Trimestre
+    ma sin pagar
+    `.trim().split('\n').map(x => x.trim()).join('\n'),//[100, 200, 300, 400, 500].join('\n'),
     size: HEIGHT * 4,
 }
 let SAVED_VALUES;

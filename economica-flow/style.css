@@ -3,10 +3,9 @@ body {
 }
 textarea {
     width     : 100%;
-    min-height: 300px;
+    min-height: 200px;
     resize: vertical;
     font-family: 'Fira Code', 'Lucida Console', Courier, monospace;
-    font-size: medium;
     padding-left: 1em;
 }
 

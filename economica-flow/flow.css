@@ -15,6 +15,10 @@
 .arrows-text-text {
     font: 20px sans-serif;
 }
+.text-small {
+    font-size: 14px;
+    fill: rgba(0,0,0,0.5);
+}
 .text-title {
     font: 32px sans-serif;
 }
