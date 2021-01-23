@@ -2,12 +2,26 @@
     --border-radius: 1em;
     --box-shadow: 0 0 1em rgba(0,0,0,0.05);
 }
-main {
+.col2 {
     margin: auto;
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(400px,1fr));
     grid-auto-flow: dense;
 }
+
+@media only screen and (min-width: 800px) {
+    .col2 .landscape {
+        grid-column-end: span 2;
+    }
+}
+
+body {
+    text-align: center;
+}
+article {
+    text-align: initial;
+}
+
 main article {
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
@@ -20,11 +34,6 @@ main article h4 {
     font-size: larger;
     padding-bottom: .4em;
     border-bottom: 2px solid black;
-}
-@media only screen and (min-width: 800px) {
-    main article.landscape {
-        grid-column-end: span 2;
-    }
 }
 
 /* formula stuff */
