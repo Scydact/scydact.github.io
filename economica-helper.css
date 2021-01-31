@@ -1,11 +1,11 @@
 :root {
     --border-radius: 1em;
-    --box-shadow: 0 0 1em rgba(0,0,0,0.05);
+    --box-shadow: 0 0 1em rgba(0, 0, 0, 0.05);
 }
 .col2 {
     margin: auto;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(400px,1fr));
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
     grid-auto-flow: dense;
 }
 
@@ -21,18 +21,26 @@ body {
 article {
     text-align: initial;
 }
+h1 {
+    text-transform: uppercase;
+}
+h2 {
+    margin-top: 3em;
+    font-size: 2.5em;
+    border-bottom: 4px solid black;
+}
 
 main article {
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
-    border: 1px solid rgba(0,0,0,0.12);
+    border: 1px solid rgba(0, 0, 0, 0.12);
     padding: 1.5em;
     margin: 1.5em;
 }
 main article h4 {
     text-align: center;
     font-size: larger;
-    padding-bottom: .4em;
+    padding-bottom: 0.4em;
     border-bottom: 2px solid black;
 }
 
@@ -41,8 +49,8 @@ formula {
     display: flex;
     flex-direction: column;
 }
-formula .output,
-formula .inputs {
+formula .output:not(:empty),
+formula .inputs:not(:empty) {
     display: grid;
     grid-template-columns: 1fr 1.5fr;
     grid-auto-rows: 2em;
@@ -50,14 +58,15 @@ formula .inputs {
     text-align: right;
     align-items: center;
     padding: 0.25em 0;
-    border-bottom: 1px solid rgba(0,0,0,0.3);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.3);
 }
 formula .output input,
 formula .inputs input {
     height: 100%;
 }
-formula .formula-static {font-size: 150%}
+formula .formula-static {
+    font-size: 150%;
+}
 formula mjx-container {
     font-size: 100% !important;
 }
-

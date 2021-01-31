@@ -26,258 +26,15 @@
             }
         };
     </script>
-    <script>
-        function updateMathContent(...s) {
-            if (MathJax && MathJax.typeset) MathJax.typeset([s]);
-        }
-        function changeContent() {
-            let x = document.getElementById('lorem')
-            let i = Math.floor(mathstr.length * Math.random());
-            x.innerHTML = '$$' + mathstr[i] + '$$';
-            updateMathContent(x);
-        }
-
-        function createNode(element, content, attributes = {}) {
-            let x = document.createElement(element);
-            if (typeof (content) === 'string')
-                content = document.createTextNode(content);
-            if (content)
-                x.appendChild(content);
-            for (attrName in attributes) {
-                let attrVal = attributes[attrName];
-                x.setAttribute(attrName, attrVal);
-            }
-            return x;
-        }
-
-        function buildFormula(opts) {
-            // let sample = 
-            let w = createNode('formula');
-            let { param, out, formula } = opts;
-
-            // Formula subdivs
-            let div_formula_static = createNode('div', formula.tex, { class: 'formula-static' });
-            let div_formula_dynamic = createNode('div', null, { class: 'formula-dynamic' });
-            let div_inputs = createNode('div', null, { class: 'inputs' });
-            let div_output = createNode('div', null, { class: 'output' });
-
-            /** Functions that updates both dynamic_values and its HTML node values. */
-            let dynamic_values_update = [];
-            /** Stores the calculated output values. Updated by dynamic_values_update[]() */
-            let dynamic_values = {};
-            /** Stores the input values. Gets updated by each <input> node.*/
-            let dynamic_parameters = {};
-
-            let updateValues = () => {
-                for (let v of dynamic_values_update)
-                    v(dynamic_parameters);
-            }
-
-            let render = () => {
-                updateValues();
-                let tex = formula.dynamic(dynamic_parameters, dynamic_values);
-                div_formula_dynamic.innerHTML = tex;
-                updateMathContent(div_formula_dynamic);
-            }
-
-            // Create outputs
-            for (let outName in out) {
-                let outSpecs = out[outName];
-                let { name = outName, value = () => 0 } = outSpecs;
-
-                div_output.appendChild(createNode('label', name));
-                let x = createNode('input', null, {
-                    type: 'text',
-                    disabled: 'true',
-                });
-                div_output.appendChild(x);
-
-                dynamic_values_update.push((v) => {
-                    let newValue = value(v)
-                    dynamic_values[outName] = newValue;
-                    x.value = newValue;
-                });
-            }
-
-            // Create form and event listener from parameters
-            for (let paramName in param) {
-                let paramSpecs = param[paramName];
-                let { name = paramName, value = 0 } = paramSpecs;
-
-                dynamic_parameters[paramName] = value;
-
-                let x = createNode('input', null, {
-                    type: 'number',
-                    value: 'value',
-                    ...paramSpecs,
-                });
-                x.addEventListener('change', (x) => {
-                    dynamic_parameters[paramName] = parseFloat(x.target.value);
-                    render();
-                })
-
-                div_inputs.appendChild(createNode('label', name));
-                div_inputs.appendChild(x);
-            }
-
-            // Append and return
-            w.appendChild(div_formula_static);
-            w.appendChild(div_inputs);
-            w.appendChild(div_output);
-            w.appendChild(div_formula_dynamic);
-
-            // Call render once after all dynamic_parameters have been set.
-            updateMathContent(div_formula_static);
-            render();
-
-            return w;
-        }
-
-        function insertAfter(referenceNode, newNode) {
-            referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
-        }
-        function insertBefore(referenceNode, newNode) {
-            referenceNode.parentNode.insertBefore(newNode, referenceNode);
-        }
-
-        let mathjax_script = document.getElementById('MathJax-script');
-
-        function formformula(opts) {
-            let x = document.currentScript;
-            mathjax_script.addEventListener('load', () => {
-                let y = buildFormula(opts);
-                insertBefore(x, y);
-            });
-        }
-        const format = (num, fraction = 2, cropZeros = true) => new Intl.NumberFormat([], {
-            minimumFractionDigits: (cropZeros) ? 0 : fraction,
-            maximumFractionDigits: fraction,
-        }).format(num);
-
-        function tryFindPARate(P, A, n, itermax = 512) {
-            let PA = P / A;
-            let console = { log: () => { }, table: () => { } };
-            console.log('P/A=' + PA);
-
-            if (n === 0 || n === -1) {
-                console.log('Case n=0, P/A = 0 (invalid)');
-                return [NaN];
-            }
-            if (n === 1) {
-                console.log('Case n=1, u=A/P');
-                return [A / P - 1];
-            }
-            if (n === 2) {
-                console.log('Case n=2, cuadratic formula');
-                let det = 4 * PA + 1;
-                let s = Math.sqrt(det);
-                let denum = 2 * PA
-                return (s === 0) ? [1 / denum - 1] : [(1 + s) / denum - 1, (1 - s) / denum - 1];
-            }
-            if (n === 0.5) {
-                console.log('Case n=0.5, cuadratic formula');
-                let det = (PA + 4) / PA;
-                let s = Math.sqrt(det);
-                let extra = 2 / PA + 1;
-                return (s === 0) ? [1 / PA - 0.5] : [0.5 * (-s + extra) - 1, 0.5 * (s + extra) - 1];
-            }
-            if (n === -2) {
-                console.log('Case n=-2, lineal formula');
-                return [-PA - 1 - 1];
-            }
-            if (n === -3) {
-                console.log('Case n=-3, cuadratic formula');
-                let det = -4 * PA - 3;
-                let s = Math.sqrt(det);
-                return (s === 0) ? [-1.5] : [0.5 * (-s - 1) - 1, 0.5 * (s - 1) - 1];
-            }
-            if (n === PA) {
-                console.log('Case n=P/A, i=0%');
-                return [0];
-            }
-            if (PA === 0 && n % 2 === 0) {
-                console.log('Case C=0, n=even; i=-200%');
-                return [-2];
-            }
-            if (PA < -1 && n % 2 === 0) {
-                console.log('Case C=negative, n=even; i=NaN');
-                return [];
-            }
-
-            //let a = (u) => (u ** (-n) - 1) / (1 - u) - PA;
-            //let da = (u) => (-n * u ** (-n - 1) + (n + 1) * u ** (-n) - 1) / (1 - u) ** 2;
-            //let a_over_da = (x) => a(x)/da(x);
-            //let a_over_da = (x) => ((x-1)*x*((PA*(x+1)-1)*(x**n)+1))/(x*(x**n-1)+n*(x-1)+n);
-            let a_over_da = (u) => ((u ** (-n) - 1) * (1 - u) - PA * (1 - u) ** 2) / (-n * u ** (-n - 1) + (n + 1) * u ** (-n) - 1);
-
-            let u_list = [1 / PA, -1, -0.6, 0.6, 0.9, 1.05, 1.5];
-            let responses = [];
-            let ans = [];
-
-            let amountOfResults = (n % 2 === 1) ? 1 : 2;
-
-            function onlyUnique(value, index, self) {
-                return self.indexOf(value) === index;
-            }
-            function isEqual(u, array) {
-                return array[0] === u && array.every(val => val === array[0]);
-            }
-            function tryPush(x) {
-                if (ans.length === 0 || ans[0] !== x) {
-                    ans.push(x);
-                    return true;
-                }
-                return false;
-            }
-
-            for (let u_init of u_list) {
-                //console.log('Using ' + u_init);
-                if (ans.length === amountOfResults) break;
-                let u = u_init;
-                let u_before = [NaN, NaN];
-                let found = false;
-
-                let i = 0;
-                while (i < itermax) {
-                    u = u - a_over_da(u);
-                    if (!isFinite(u)) {
-                        //console.log('Diverged to ' + u + ' after ' + i + ' iterations.');
-                        responses.push({ initial: u_init, iteration: i, value: u - 1 });
-                        found = true;
-                        break;
-                    }
-                    if (isEqual(u, u_before)) {
-                        //console.log('Found ' + u + ' after ' + i + ' iterations.');
-                        tryPush(u - 1);
-                        responses.push({ initial: u_init, iteration: i, value: u - 1 });
-                        found = true;
-                        break;
-                    }
-                    u_before = [...u_before.slice(2), u];
-                    ++i;
-                }
-                if (!found) {
-                    //console.log('Not found (' + u + ') after ' + i + ' iterations.');
-                    if (u > 1e140) u = Infinity;
-                    if (u < -1e140) u = -Infinity;
-                    if (isFinite(u)) tryPush(u - 1);
-                    responses.push({ initial: u_init, iteration: i, value: u - 1 });
-                }
-            }
-            console.table(
-                responses
-                //.filter(x => isFinite(x.value))
-                //.sort((a, b) => a.iteration - b.iteration)
-            );
-            return ans;
-        }
-    </script>
+    <script src="economica-helper.js"></script>
 </head>
 
 <body>
     <h1>Fórmulas Ing. Económica</h1>
     <p style='font-size: medium; text-align: center;'><a href="./economica-flow/">Para hacer diagramas de flujo, click
             aquí.</a></p>
+
+    <div id='options'></div>
     <main>
         <h2>Factores</h2>
         <div class='col2'>
@@ -289,42 +46,32 @@
                 <script>
                     formformula({
                         param: {
-                            i: { name: 'Interes (i%)', value: 15 },
+                            i: { name: 'Interes (i%)', 'data-type': 'interes', value: 10 },
                             n: { name: 'Periodo (n)', value: 1, step: 1 },
                             P: { name: 'Valor presente (P)', value: 100 },
                         },
                         out: {
+                            factor: {
+                                name: 'F/P',
+                                value: (p) => {
+                                    let { i, n } = p;
+                                    i = i / 100;
+                                    return i_factor = (1 + i) ** n;
+                                },
+                                format: ff,
+                            },
                             F: {
                                 name: 'Valor futuro (F)',
-                                value: (p) => format(p.P * (1 + p.i / 100) ** p.n),
+                                value: (p, v) => p.P * v.factor,
+                                format: f$,
                             },
                         },
                         formula: {
                             tex: '$$\\textrm{F} = \\textrm{P}\\cdot(1+i)^n$$',
-                            dynamic: (p, v) => `$$ \\textrm{F} = (${p.P})(1 + ${p.i / 100})^{${p.n}} = ${v.F}$$`,
-                        },
-                    });
-                </script>
-            </article>
-
-            <article style="background-color: #FDF6EC">
-                <h4>Factor de recuperación de capital (FRC o A/P)</h4>
-                <script>
-                    formformula({
-                        param: {
-                            i: { name: 'Interes (i%)', value: 15 },
-                            n: { name: 'Periodo (n)', value: 1, step: 1 },
-                            P: { name: 'Valor presente (P)', value: 100 },
-                        },
-                        out: {
-                            A: {
-                                name: 'Anualidad (A)',
-                                value: (p) => { let x = (1 + p.i / 100) ** p.n; return format(p.P * ((p.i / 100) * x) / (x - 1)) },
+                            dynamic: (p, v) => {
+                                let exp = (p.n === 1) ? '' : `^{${p.n}}`;
+                                return `$$ \\textrm{F} = (${p.P})(1 + ${p.i / 100})${exp} = ${v.F}$$`
                             },
-                        },
-                        formula: {
-                            tex: '$$A = P\\left[\\frac{i(1+i)^n}{(1+i)^n-1}\\right]$$',
-                            dynamic: (p, v) => `$$A = ${p.P}\\left[\\frac{${p.i / 100}(1+${p.i / 100})^{${p.n}}}{(1+${p.i / 100})^{${p.n}}-1}\\right]=${v.A}$$`,
                         },
                     });
                 </script>
@@ -335,14 +82,25 @@
                 <script>
                     formformula({
                         param: {
-                            i: { name: 'Interes (i%)', value: 15 },
+                            i: { name: 'Interes (i%)', 'data-type': 'interes', value: 10 },
                             n: { name: 'Periodo (n)', value: 1, step: 1 },
                             A: { name: 'Anualidad (A)', value: 100 },
                         },
                         out: {
+                            factor: {
+                                name: 'P/A',
+                                value: (p) => {
+                                    let { i, n } = p;
+                                    i = i / 100;
+                                    let i_factor = (1 + i) ** n;
+                                    return (i_factor - 1) / (i * i_factor);
+                                },
+                                format: ff,
+                            },
                             P: {
                                 name: 'Valor presente (P)',
-                                value: (p) => { let x = (1 + p.i / 100) ** p.n; return format(p.A * (x - 1) / ((p.i / 100) * x)) },
+                                value: (p, v) => p.A * v.factor,
+                                format: f$,
                             },
                         },
                         formula: {
@@ -353,24 +111,35 @@
                 </script>
             </article>
 
-            <article style="background-color: #ECFDF6">
-                <h4>Factor de fondo de amortización (A/F):</h4>
+            <article style="background-color: #FDF6EC">
+                <h4>Factor de recuperación de capital (FRC o A/P)</h4>
                 <script>
                     formformula({
                         param: {
-                            i: { name: 'Interes (i%)', value: 15 },
+                            i: { name: 'Interes (i%)', 'data-type': 'interes', value: 10 },
                             n: { name: 'Periodo (n)', value: 1, step: 1 },
-                            F: { name: 'Valor futuro (F)', value: 100 },
+                            P: { name: 'Valor presente (P)', value: 100 },
                         },
                         out: {
+                            factor: {
+                                name: 'A/P',
+                                value: (p) => {
+                                    let { i, n } = p;
+                                    i = i / 100;
+                                    let i_factor = (1 + i) ** n;
+                                    return (i * i_factor) / (i_factor - 1);
+                                },
+                                format: ff,
+                            },
                             A: {
                                 name: 'Anualidad (A)',
-                                value: (p) => format(p.F * (p.i / 100) / ((1 + p.i / 100) ** p.n - 1)),
+                                value: (p, v) => p.P * v.factor,
+                                format: f$,
                             },
                         },
                         formula: {
-                            tex: '$$A = F\\left[\\frac{i}{(1+i)^n-1}\\right]$$',
-                            dynamic: (p, v) => `$$A = ${p.F}\\left[\\frac{${p.i / 100}}{(1+${p.i / 100})^{${p.n}}-1}\\right]=${v.A}$$`,
+                            tex: '$$A = P\\left[\\frac{i(1+i)^n}{(1+i)^n-1}\\right]$$',
+                            dynamic: (p, v) => `$$A = ${p.P}\\left[\\frac{${p.i / 100}(1+${p.i / 100})^{${p.n}}}{(1+${p.i / 100})^{${p.n}}-1}\\right]=${v.A}$$`,
                         },
                     });
                 </script>
@@ -381,19 +150,143 @@
                 <script>
                     formformula({
                         param: {
-                            i: { name: 'Interes (i%)', value: 15 },
+                            i: { name: 'Interes (i%)', 'data-type': 'interes', value: 10 },
                             n: { name: 'Periodo (n)', value: 1, step: 1 },
                             A: { name: 'Anualidad (A)', value: 100 },
                         },
                         out: {
+                            factor: {
+                                name: 'F/A',
+                                value: (p) => {
+                                    let { i, n } = p;
+                                    i = i / 100;
+                                    let i_factor = (1 + i) ** n;
+                                    return (i_factor - 1) / i;
+                                },
+                                format: ff,
+                            },
                             F: {
                                 name: 'Valor futuro (F)',
-                                value: (p) => format(p.A * ((1 + p.i / 100) ** p.n - 1) / (p.i / 100)),
+                                value: (p, v) => p.A * v.factor,
+                                format: f$,
                             },
                         },
                         formula: {
                             tex: '$$F = A\\left[\\frac{(1+i)^n-1}{i}\\right]$$',
                             dynamic: (p, v) => `$$F = ${p.A}\\left[\\frac{(1+${p.i / 100})^{${p.n}}-1}{${p.i / 100}}\\right]=${v.F}$$`,
+                        },
+                    });
+                </script>
+            </article>
+
+            <article style="background-color: #ECFDF6">
+                <h4>Factor de fondo de amortización (A/F):</h4>
+                <script>
+                    formformula({
+                        param: {
+                            i: { name: 'Interes (i%)', 'data-type': 'interes', value: 10 },
+                            n: { name: 'Periodo (n)', value: 1, step: 1 },
+                            F: { name: 'Valor futuro (F)', value: 100 },
+                        },
+                        out: {
+                            factor: {
+                                name: 'A/F',
+                                value: (p) => {
+                                    let { i, n } = p;
+                                    i = i / 100;
+                                    let i_factor = (1 + i) ** n;
+                                    return i / (i_factor - 1);
+                                },
+                                format: ff,
+                            },
+                            A: {
+                                name: 'Anualidad (A)',
+                                value: (p, v) => p.F * v.factor,
+                                format: f$,
+                            },
+                        },
+                        formula: {
+                            tex: '$$A = F\\left[\\frac{i}{(1+i)^n-1}\\right]$$',
+                            dynamic: (p, v) => `$$A = ${p.F}\\left[\\frac{${p.i / 100}}{(1+${p.i / 100})^{${p.n}}-1}\\right]=${v.A}$$`,
+                        },
+                    });
+                </script>
+            </article>
+
+            <article style="background-color: #f3ecfd">
+                <h4>Factor de valor presente de gradiente aritmético (P/G)</h4>
+                <p>Recordar que el gradiente siempre empieza en t=2 <br>(se asume que el primer gradiente es multiplo
+                    n=0)</p>
+                <script>
+                    formformula({
+                        param: {
+                            i: { name: 'Interes (i%)', 'data-type': 'interes', value: 10 },
+                            n: { name: 'Periodo (n)', value: 5, step: 1 },
+                            G: { name: 'Gradiente (G)', value: 100 },
+                        },
+                        out: {
+                            factor: {
+                                name: 'P/G',
+                                value: (p) => {
+                                    let { n, i } = p;
+                                    i = i / 100;
+                                    let i_factor = (1 + i) ** n;
+                                    return (1 / i) * ((i_factor - 1) / (i * i_factor) - n / i_factor);
+                                },
+                                format: ff,
+                            },
+                            P: {
+                                name: 'Presente (P)',
+                                value: (p, o) => p.G * o.factor,
+                                format: f$,
+                            },
+                        },
+                        formula: {
+                            tex: '$$P_G = \\frac{G}{i}\\left[\\frac{(1+i)^n-1}{i(1+i)^n}-\\frac{n}{(1+i)^n}\\right]$$',
+                            dynamic: (p, v) => {
+                                let { G, n, i } = p;
+                                i = i / 100;
+                                return `$$P_G = \\frac{${G}}{${i}}\\left[\\frac{(1+${i})^{${n}}-1}{${i}(1+${i})^{${n}}}-\\frac{${n}}{(1+${i})^{${n}}}\\right]=${v.P}$$`
+                            },
+                        },
+                    });
+                </script>
+            </article>
+
+            <article style="background-color: #f3ecfd">
+                <h4>Factor de valor anual de gradiente aritmético (P/A)</h4>
+                <p>Recordar que el gradiente siempre empieza en t=2.</p>
+                <script>
+                    formformula({
+                        param: {
+                            i: { name: 'Interes (i%)', 'data-type': 'interes', value: 10 },
+                            n: { name: 'Periodo (n)', value: 5, step: 1 },
+                            G: { name: 'Gradiente (G)', value: 100 },
+                        },
+                        out: {
+                            factor: {
+                                name: 'A/G',
+                                value: (p) => {
+                                    let { n, i } = p;
+                                    i = i / 100;
+                                    let i_factor = (1 + i) ** n;
+                                    return 1 / i - n / (i_factor - 1);
+                                },
+                                format: ff,
+                            },
+                            A: {
+                                name: 'Anualidad (A)',
+                                value: (p, o) => p.G * o.factor,
+                                format: f$,
+                            },
+                        },
+                        formula: {
+                            tex: '$$A_G = G\\left[\\frac{1}{i}-\\frac{n}{(1+i)^{n}-1}\\right]$$',
+                            dynamic: (p, v) => {
+                                let { G, n, i } = p;
+                                i = i / 100;
+                                return `$$A_G = ${G}\\left[\\frac{1}{${i}}-\\frac{${n}}{(1+${i})^{${n}}-1}\\right]=${v.A}$$`
+                            },
                         },
                     });
                 </script>
@@ -415,7 +308,7 @@
                         out: {
                             i: {
                                 name: 'Interes (i%)',
-                                value: (p) => format(100 * ((p.F / p.P) ** (1 / p.n) - 1), 4),
+                                value: (p) => 100 * ((p.F / p.P) ** (1 / p.n) - 1),
                             },
                         },
                         formula: {
@@ -444,7 +337,7 @@
                         out: {
                             i: {
                                 name: 'Interes (i%)',
-                                value: (p) => tryFindPARate(p.P, p.A, p.n).map(x => format(100 * x, 4)),
+                                value: (p) => tryFindPARate(p.P, p.A, p.n).map(x => 100 * x),
                             },
                         },
                         formula: {
@@ -525,6 +418,37 @@
                                 return t + a + '\\approx ' + b + '$$';
                             },
                         },
+                    });
+                </script>
+            </article>
+        </div>
+
+
+        <h2>Otros</h2>
+        <div class="col2">
+            <article style="background-color: #ffffff">
+                <h4>Interpolacion:</h4>
+                <script>
+                    formformula({
+                        param: {
+                            x: { name: 'x deseado', value: 10.5, },
+                            x1: { name: 'x1', value: 10, },
+                            x2: { name: 'x2', value: 11, },
+                            f1: { name: 'f1', value: 40, },
+                            f2: { name: 'f2', value: 200, },
+                        },
+                        out: {
+                            f: {
+                                name: 'f deseado',
+                                value: (p) => {
+                                    let { f1, f2, x1, x2, x } = p;
+                                    return f1 + (x - x1) * (f2 - f1) / (x2 - x1);
+                                },
+                            },
+                        },
+                        formula: {
+                            tex: '$$f=f_1+\\frac{\\left(x-x_1\\right)}{\\left(x_2-x_1\\right)}\\left(f_2-f_1\\right)$$'
+                        }
                     });
                 </script>
             </article>
