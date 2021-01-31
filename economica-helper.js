@@ -28,7 +28,7 @@ let GLOBAL_PARAMS = {
     trim_zeros_factor: 0,
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function loadOptions() {
     let a = document.getElementById('options');
     if (a) {
         // doesnt depend on mathjax, so no need to wait for it to load.
@@ -60,7 +60,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         a.appendChild(b);
     }
-});
+}
+
 
 
 let RENDER_FUNCTIONS = [];
@@ -79,8 +80,8 @@ const format = (num, fraction = 2, cropZeros = true) => new Intl.NumberFormat([]
     minimumFractionDigits: (cropZeros) ? 0 : fraction,
     maximumFractionDigits: fraction,
 }).format(num);
-const f$ = (n) => format(n, GLOBAL_PARAMS.digits_currency, !!GLOBAL_PARAMS.trim_zeros_currency);
-const ff = (n) => format(n, GLOBAL_PARAMS.digits_factor, !!GLOBAL_PARAMS.trim_zeros_factor);
+var f$ = (n) => format(n, GLOBAL_PARAMS.digits_currency, !!GLOBAL_PARAMS.trim_zeros_currency);
+var ff = (n) => format(n, GLOBAL_PARAMS.digits_factor, !!GLOBAL_PARAMS.trim_zeros_factor);
 
 function buildFormula(opts) {
     // let sample = 
@@ -219,16 +220,6 @@ function insertBefore(referenceNode, newNode) {
     referenceNode.parentNode.insertBefore(newNode, referenceNode);
 }
 
-let mathjax_script = document.getElementById('MathJax-script');
-
-function formformula(opts) {
-    let x = document.currentScript;
-    mathjax_script.addEventListener('load', () => {
-        let y = buildFormula(opts);
-        insertBefore(x, y);
-    });
-}
-
 function tryFindPARate(P, A, n, itermax = 512) {
     let PA = P / A;
     let console = { log: () => { }, table: () => { } };
@@ -280,6 +271,7 @@ function tryFindPARate(P, A, n, itermax = 512) {
     }
 
     //let a = (u) => (u ** (-n) - 1) / (1 - u) - PA;
+    //Using derivate() or a/da makes this process more prone to floating point errors.
     //let da = (u) => (-n * u ** (-n - 1) + (n + 1) * u ** (-n) - 1) / (1 - u) ** 2;
     //let a_over_da = (x) => a(x)/da(x);
     //let a_over_da = (x) => ((x-1)*x*((PA*(x+1)-1)*(x**n)+1))/(x*(x**n-1)+n*(x-1)+n);
@@ -345,4 +337,87 @@ function tryFindPARate(P, A, n, itermax = 512) {
         //.sort((a, b) => a.iteration - b.iteration)
     );
     return ans;
+}
+
+
+//#region Funky maths
+function getNumberParts(x) {
+    var float = new Float64Array(1),
+        bytes = new Uint8Array(float.buffer);
+
+    float[0] = x;
+
+    var sign = bytes[7] >> 7,
+        exponent = ((bytes[7] & 0x7f) << 4 | bytes[6] >> 4) - 0x3ff;
+
+    bytes[7] = 0x3f;
+    bytes[6] |= 0xf0;
+
+    return {
+        sign: sign,
+        exponent: exponent,
+        mantissa: float[0],
+    }
+}
+
+function fromNumberParts(obj) {
+    let { sign, exponent, mantissa } = obj;
+    return (sign) ? -mantissa * 2 ** exponent : mantissa * 2 ** exponent;
+}
+
+function minimalEpsilon(x, thres = 1) {
+    return Number.EPSILON * 2 ** (getNumberParts(x).exponent + thres);
+}
+
+function derivate(fn, x) {
+    let h = minimalEpsilon(x);
+    return (fn(x + h) - fn(x)) / h;
+}
+
+function isContinuous(fn, x) {
+    return (limit(fn, x, -1) === limit(fn, x, 1))
+}
+
+function limit(fn, x, side = 0, thres = 1, maxIter = 50) {
+    let a = fn(x);
+    if (isFinite(a)) return a;
+
+    let dx = minimalEpsilon(x, thres);
+    if (side === 0) {
+        let a = limit(fn, x, -1, thres);
+        let b = limit(fn, x, 1, thres);
+        if (isNaN(a)) return b; // a is NaN... b might or might not be NaN.
+        else if (isNaN(b)) return a; // a is a number, but b is NaN, so a is limit.
+        // else if (thres < maxIter && Math.abs(a / b - 1) > 1e-10) { return limit(fn, x, 0, thres + 1); }// flat limit
+        else { return 0.5 * (a + b); } // correct stuff
+    } else {
+        return fn(x + side * dx);
+    }
+}
+
+function createFormulaBlocks() {
+    let blocks = document.getElementsByClassName('buildformula');
+    for (let block of blocks) {
+        let txt = block.innerText
+            .split('\n')
+            .map(x => x.trim())
+            .join('');
+        let fn = new Function(`return ${txt}`);
+        let opts = fn();
+        let y = buildFormula(opts);
+        insertBefore(block, y);
+        block.innerHTML = '';
+    }
+}
+
+function init() {
+    loadOptions();
+    createFormulaBlocks();
+}
+
+if (document.readyState === 'complete') init();
+else {
+    document.onreadystatechange = () => {
+        if (document.readyState === 'complete') init();
+    }
 }

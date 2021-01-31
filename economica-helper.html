@@ -23,10 +23,13 @@
             },
             svg: {
                 fontCache: 'global'
-            }
+            },
         };
     </script>
-    <script src="economica-helper.js"></script>
+    <script async src="economica-helper.js"></script>
+    <style>
+        .buildformula {display: none;}
+    </style>
 </head>
 
 <body>
@@ -43,8 +46,8 @@
                 <p><b>Nota:</b> Para simular el factor P/F, usar periodo negativo
                     y asumir que la entrada $\textrm{VP=VF}$, y la salida $\textrm{VF=VP}$.
                 </p>
-                <script>
-                    formformula({
+                <code class='buildformula'>
+                    {
                         param: {
                             i: { name: 'Interes (i%)', 'data-type': 'interes', value: 10 },
                             n: { name: 'Periodo (n)', value: 1, step: 1 },
@@ -73,14 +76,14 @@
                                 return `$$ \\textrm{F} = (${p.P})(1 + ${p.i / 100})${exp} = ${v.F}$$`
                             },
                         },
-                    });
-                </script>
+                    }
+                </code>
             </article>
 
             <article style="background-color: #FDF6EC">
                 <h4>Factor de valor presente de serie uniforme (FVPSU o P/A)</h4>
-                <script>
-                    formformula({
+                <code class='buildformula'>
+                    {
                         param: {
                             i: { name: 'Interes (i%)', 'data-type': 'interes', value: 10 },
                             n: { name: 'Periodo (n)', value: 1, step: 1 },
@@ -107,14 +110,14 @@
                             tex: '$$P = A\\left[\\frac{(1+i)^n-1}{i(1+i)^n}\\right]$$',
                             dynamic: (p, v) => `$$P = ${p.A}\\left[\\frac{(1+${p.i / 100})^{${p.n}}-1}{${p.i / 100}(1+${p.i / 100})^{${p.n}}}\\right]=${v.P}$$`,
                         },
-                    });
-                </script>
+                    }
+                </code>
             </article>
 
             <article style="background-color: #FDF6EC">
                 <h4>Factor de recuperación de capital (FRC o A/P)</h4>
-                <script>
-                    formformula({
+                <code class='buildformula'>
+                    {
                         param: {
                             i: { name: 'Interes (i%)', 'data-type': 'interes', value: 10 },
                             n: { name: 'Periodo (n)', value: 1, step: 1 },
@@ -141,14 +144,14 @@
                             tex: '$$A = P\\left[\\frac{i(1+i)^n}{(1+i)^n-1}\\right]$$',
                             dynamic: (p, v) => `$$A = ${p.P}\\left[\\frac{${p.i / 100}(1+${p.i / 100})^{${p.n}}}{(1+${p.i / 100})^{${p.n}}-1}\\right]=${v.A}$$`,
                         },
-                    });
-                </script>
+                    }
+                </code>
             </article>
 
             <article style="background-color: #ECFDF6">
                 <h4>Factor de cantidad compuesta de una serie uniforme (FCCSU o F/A):</h4>
-                <script>
-                    formformula({
+                <code class='buildformula'>
+                    {
                         param: {
                             i: { name: 'Interes (i%)', 'data-type': 'interes', value: 10 },
                             n: { name: 'Periodo (n)', value: 1, step: 1 },
@@ -175,14 +178,14 @@
                             tex: '$$F = A\\left[\\frac{(1+i)^n-1}{i}\\right]$$',
                             dynamic: (p, v) => `$$F = ${p.A}\\left[\\frac{(1+${p.i / 100})^{${p.n}}-1}{${p.i / 100}}\\right]=${v.F}$$`,
                         },
-                    });
-                </script>
+                    }
+                </code>
             </article>
 
             <article style="background-color: #ECFDF6">
                 <h4>Factor de fondo de amortización (A/F):</h4>
-                <script>
-                    formformula({
+                <code class='buildformula'>
+                    {
                         param: {
                             i: { name: 'Interes (i%)', 'data-type': 'interes', value: 10 },
                             n: { name: 'Periodo (n)', value: 1, step: 1 },
@@ -209,16 +212,16 @@
                             tex: '$$A = F\\left[\\frac{i}{(1+i)^n-1}\\right]$$',
                             dynamic: (p, v) => `$$A = ${p.F}\\left[\\frac{${p.i / 100}}{(1+${p.i / 100})^{${p.n}}-1}\\right]=${v.A}$$`,
                         },
-                    });
-                </script>
+                    }
+                </code>
             </article>
 
             <article style="background-color: #f3ecfd">
                 <h4>Factor de valor presente de gradiente aritmético (P/G)</h4>
                 <p>Recordar que el gradiente siempre empieza en t=2 <br>(se asume que el primer gradiente es multiplo
                     n=0)</p>
-                <script>
-                    formformula({
+                <code class='buildformula'>
+                    {
                         param: {
                             i: { name: 'Interes (i%)', 'data-type': 'interes', value: 10 },
                             n: { name: 'Periodo (n)', value: 5, step: 1 },
@@ -249,15 +252,15 @@
                                 return `$$P_G = \\frac{${G}}{${i}}\\left[\\frac{(1+${i})^{${n}}-1}{${i}(1+${i})^{${n}}}-\\frac{${n}}{(1+${i})^{${n}}}\\right]=${v.P}$$`
                             },
                         },
-                    });
-                </script>
+                    }
+                </code>
             </article>
 
             <article style="background-color: #f3ecfd">
                 <h4>Factor de valor anual de gradiente aritmético (P/A)</h4>
                 <p>Recordar que el gradiente siempre empieza en t=2.</p>
-                <script>
-                    formformula({
+                <code class='buildformula'>
+                    {
                         param: {
                             i: { name: 'Interes (i%)', 'data-type': 'interes', value: 10 },
                             n: { name: 'Periodo (n)', value: 5, step: 1 },
@@ -288,8 +291,8 @@
                                 return `$$A_G = ${G}\\left[\\frac{1}{${i}}-\\frac{${n}}{(1+${i})^{${n}}-1}\\right]=${v.A}$$`
                             },
                         },
-                    });
-                </script>
+                    }
+                </code>
             </article>
         </div>
 
@@ -298,8 +301,8 @@
         <div class='col2'>
             <article style="background-color: #FDEDEC">
                 <h4>F/P:</h4>
-                <script>
-                    formformula({
+                <code class='buildformula'>
+                    {
                         param: {
                             F: { name: 'Futuro (F)', value: 15 },
                             P: { name: 'Presente (P)', value: 10, },
@@ -321,14 +324,14 @@
                                 }
                             },
                         },
-                    });
-                </script>
+                    }
+                </code>
             </article>
             <article style="background-color: #FDF6EC">
                 <h4>A/P:</h4>
                 <p>Se calcula mediante Método de Newton en casos de n > 2.</p>
-                <script>
-                    formformula({
+                <code class='buildformula'>
+                    {
                         param: {
                             P: { name: 'Presente (P)', value: 10, },
                             A: { name: 'Anualidad (A)', value: 5 },
@@ -353,8 +356,8 @@
                                 return t.join(' ');
                             },
                         },
-                    });
-                </script>
+                    }
+                </code>
             </article>
         </div>
 
@@ -362,8 +365,8 @@
         <div class="col2">
             <article style="background-color: #FDEDEC">
                 <h4>F/P:</h4>
-                <script>
-                    formformula({
+                <code class='buildformula'>
+                    {
                         param: {
                             F: { name: 'Futuro (F)', value: 30 },
                             P: { name: 'Presente (P)', value: 10, },
@@ -385,14 +388,14 @@
                                 return t + a + '\\approx ' + b + '$$';
                             },
                         },
-                    });
-                </script>
+                    }
+                </code>
             </article>
 
             <article style="background-color: #FDF6EC">
                 <h4>A/P:</h4>
-                <script>
-                    formformula({
+                <code class='buildformula'>
+                    {
                         param: {
                             P: { name: 'Presente (P)', value: 10, },
                             A: { name: 'Anualidad (A)', value: 5 },
@@ -418,8 +421,8 @@
                                 return t + a + '\\approx ' + b + '$$';
                             },
                         },
-                    });
-                </script>
+                    }
+                </code>
             </article>
         </div>
 
@@ -428,8 +431,8 @@
         <div class="col2">
             <article style="background-color: #ffffff">
                 <h4>Interpolacion:</h4>
-                <script>
-                    formformula({
+                <code class='buildformula'>
+                    {
                         param: {
                             x: { name: 'x deseado', value: 10.5, },
                             x1: { name: 'x1', value: 10, },
@@ -449,8 +452,8 @@
                         formula: {
                             tex: '$$f=f_1+\\frac{\\left(x-x_1\\right)}{\\left(x_2-x_1\\right)}\\left(f_2-f_1\\right)$$'
                         }
-                    });
-                </script>
+                    }
+                </code>
             </article>
         </div>
     </main>
