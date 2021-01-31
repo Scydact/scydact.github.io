@@ -270,7 +270,7 @@ function tryFindPARate(P, A, n, itermax = 512) {
         return [];
     }
 
-    //let a = (u) => (u ** (-n) - 1) / (1 - u) - PA;
+    let a = (u) => (u ** (-n) - 1) / (1 - u) - PA;
     //Using derivate() or a/da makes this process more prone to floating point errors.
     //let da = (u) => (-n * u ** (-n - 1) + (n + 1) * u ** (-n) - 1) / (1 - u) ** 2;
     //let a_over_da = (x) => a(x)/da(x);
@@ -297,46 +297,7 @@ function tryFindPARate(P, A, n, itermax = 512) {
         return false;
     }
 
-    for (let u_init of u_list) {
-        //console.log('Using ' + u_init);
-        if (ans.length === amountOfResults) break;
-        let u = u_init;
-        let u_before = [NaN, NaN];
-        let found = false;
-
-        let i = 0;
-        while (i < itermax) {
-            u = u - a_over_da(u);
-            if (!isFinite(u)) {
-                //console.log('Diverged to ' + u + ' after ' + i + ' iterations.');
-                responses.push({ initial: u_init, iteration: i, value: u - 1 });
-                found = true;
-                break;
-            }
-            if (isEqual(u, u_before)) {
-                //console.log('Found ' + u + ' after ' + i + ' iterations.');
-                tryPush(u - 1);
-                responses.push({ initial: u_init, iteration: i, value: u - 1 });
-                found = true;
-                break;
-            }
-            u_before = [...u_before.slice(2), u];
-            ++i;
-        }
-        if (!found) {
-            //console.log('Not found (' + u + ') after ' + i + ' iterations.');
-            if (u > 1e140) u = Infinity;
-            if (u < -1e140) u = -Infinity;
-            if (isFinite(u)) tryPush(u - 1);
-            responses.push({ initial: u_init, iteration: i, value: u - 1 });
-        }
-    }
-    console.table(
-        responses
-        //.filter(x => isFinite(x.value))
-        //.sort((a, b) => a.iteration - b.iteration)
-    );
-    return ans;
+    return newtonApproximate_a_over_da(a_over_da, u_list, itermax, amountOfResults);
 }
 
 
@@ -369,16 +330,16 @@ function minimalEpsilon(x, thres = 1) {
     return Number.EPSILON * 2 ** (getNumberParts(x).exponent + thres);
 }
 
-function derivate(fn, x) {
-    let h = minimalEpsilon(x);
+function derivate(fn, x, thres = 20) {
+    let h = minimalEpsilon(x, thres);
     return (fn(x + h) - fn(x)) / h;
 }
 
 function isContinuous(fn, x) {
-    return (limit(fn, x, -1) === limit(fn, x, 1))
+    return (limit(fn, x, -1) === limit(fn, x, 1));
 }
 
-function limit(fn, x, side = 0, thres = 1, maxIter = 50) {
+function limit(fn, x, side = 0, thres = 15) {
     let a = fn(x);
     if (isFinite(a)) return a;
 
@@ -395,6 +356,73 @@ function limit(fn, x, side = 0, thres = 1, maxIter = 50) {
     }
 }
 
+
+function newtonApproximate_a_over_da(a_over_da, initvalues = [-2, -1, -0.5, 0, 0.5, 1, 2], maxIterations = 512, maxValues = Infinity, cacheSize = 3) {
+    let ans = [];
+    let responses = [];
+    let console = { log: () => { }, table: () => { } };
+
+    function onlyUnique(value, index, self) {
+        return self.indexOf(value) === index;
+    }
+    function isEqual(u, array) {
+        return array[0] === u && array.every(val => val === array[0]);
+    }
+    function tryPush(x) {
+        if (ans.length === 0 || ans[0] !== x) {
+            ans.push(x);
+            return true;
+        }
+        return false;
+    }
+
+    for (let u_init of initvalues) {
+        if (ans.length === maxValues) break;
+        let u = u_init;
+        let u_before = new Array(cacheSize);
+        let found = false;
+
+        let i = 0;
+        while (i < maxIterations) {
+            u = u - a_over_da(u);
+            if (!isFinite(u)) {
+                responses.push({ initial: u_init, iteration: i, value: u - 1 });
+                found = true;
+                break;
+            }
+            if (isEqual(u, u_before)) {
+                tryPush(u - 1);
+                responses.push({ initial: u_init, iteration: i, value: u - 1 });
+                found = true;
+                break;
+            }
+            u_before = [...u_before.slice(2), u];
+            ++i;
+        }
+        if (!found) {
+            if (u > 1e140) u = Infinity;
+            if (u < -1e140) u = -Infinity;
+            if (isFinite(u)) tryPush(u - 1);
+            responses.push({ initial: u_init, iteration: i, value: u - 1 });
+        }
+    }
+    console.table(
+        responses
+        //.filter(x => isFinite(x.value))
+        //.sort((a, b) => a.iteration - b.iteration)
+    );
+    return ans;
+}
+
+function newtonApproximate(fn, initvalues, maxIterations, maxValues, cacheSize) {
+    return newtonApproximate_a_over_da(
+        (u) => fn(u) / derivate(fn, u),
+        initvalues, maxIterations, maxValues, cacheSize);
+}
+
+//#endregion
+
+//#region Init stuff
 function createFormulaBlocks() {
     let blocks = document.getElementsByClassName('buildformula');
     for (let block of blocks) {
@@ -421,3 +449,6 @@ else {
         if (document.readyState === 'complete') init();
     }
 }
+
+
+//#endregion
