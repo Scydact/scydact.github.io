@@ -8,17 +8,31 @@ function changeContent() {
     updateMathContent(x);
 }
 
+function setAttributes(element, attributes) {
+    for (attrName in attributes) {
+        let attrVal = attributes[attrName];
+        element.setAttribute(attrName, attrVal);
+    }
+}
+
 function createNode(element, content, attributes = {}) {
     let x = document.createElement(element);
     if (typeof (content) === 'string')
         content = document.createTextNode(content);
     if (content)
         x.appendChild(content);
-    for (attrName in attributes) {
-        let attrVal = attributes[attrName];
-        x.setAttribute(attrName, attrVal);
-    }
+    setAttributes(x, attributes);
     return x;
+}
+
+function triggerEvent(element, event) {
+    if ('createEvent' in document) {
+        let evt = document.createEvent('HTMLEvents');
+        evt.initEvent(event, false, true);
+        element.dispatchEvent(evt);
+    }
+    else
+        element.fireEvent("onchange");
 }
 
 let GLOBAL_PARAMS = {
@@ -27,6 +41,44 @@ let GLOBAL_PARAMS = {
     trim_zeros_currency: 0,
     trim_zeros_factor: 0,
 }
+
+let HISTORY = {
+    undoStack: [],
+    redoStack: [],
+    do: function (x) {
+        this.undoStack.push(x);
+        this.redoStack = [];
+    },
+    flipOldNewValues: function (a) {
+        return { ...a, old: a.new, new: a.old };
+    },
+    undo: function () {
+        let a = this.undoStack.pop();
+        if (a) {
+            this.redoStack.push(this.flipOldNewValues(a));
+            setAttributes(a.element, a.old);
+            triggerEvent(a.element, 'change');
+            if (a.action) a.action();
+        }
+    },
+    redo: function () {
+        let a = this.redoStack.pop();
+        if (a) {
+            this.undoStack.push(this.flipOldNewValues(a));
+            setAttributes(a.element, a.old);
+            triggerEvent(a.element, 'change');
+            if (a.action) a.action();
+        }
+    }
+}
+
+document.addEventListener('keydown', function (event) {
+    if (event.ctrlKey && event.key === 'z') {
+        HISTORY.undo()
+    } else if (event.ctrlKey && event.key === 'z') {
+        HISTORY.redo();
+    }
+});
 
 function loadOptions() {
     let a = document.getElementById('options');
@@ -104,7 +156,7 @@ function buildFormula(opts) {
 
     function updateValues() {
         for (let v of dynamic_values_update)
-            v(dynamic_parameters, dynamic_values);
+            v(dynamic_parameters, dynamic_values._UNFORMATTED);
     }
 
     let renderOpts = {
@@ -119,15 +171,7 @@ function buildFormula(opts) {
         renderOpts = { ...renderOpts, ...tempOpts };
 
         if (renderOpts.readInputs)
-            div_inputs.querySelectorAll('input').forEach(element => {
-                if ('createEvent' in document) {
-                    let evt = document.createEvent('HTMLEvents');
-                    evt.initEvent('change', false, true);
-                    element.dispatchEvent(evt);
-                }
-                else
-                    element.fireEvent("onchange");
-            });
+            div_inputs.querySelectorAll('input').forEach(element => triggerEvent(element, 'change'));
 
         renderOpts = oldOpts;
     }
@@ -192,15 +236,23 @@ function buildFormula(opts) {
         if (!paramSpecs.ignore) // ignored == does not add to paramName and does not update.
             x.addEventListener('change', (y) => {
                 let x = y.target;
+                let ov = x.getAttribute('oldvalue');
                 try {
                     let a = math.evaluate(x.value);
                     if (isNaN(a)) throw new Error('Not a number!');
                     x.value = a;
-                    x.setAttribute('oldvalue',a);
+                    x.setAttribute('oldvalue', a);
                     dynamic_parameters[paramName] = a;
+                    HISTORY.do({
+                        element: x,
+                        new: { value: a, oldvalue: a },
+                        old: { value: ov, oldvalue: ov },
+                        // action: render(),
+                    });
                     render();
-                } catch {
-                    x.value = x.getAttribute('oldvalue');
+                }
+                catch {
+                    x.value = ov;
                 }
             })
         if (paramSpecs.onchange) x.addEventListener('change', paramSpecs.onchange);
@@ -452,7 +504,7 @@ function init() {
     createFormulaBlocks();
 }
 
-window.addEventListener('load',init)
+window.addEventListener('load', init)
 
 
 //#endregion
