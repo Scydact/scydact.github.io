@@ -185,14 +185,23 @@ function buildFormula(opts) {
         if (!paramSpecs.ignore) dynamic_parameters[paramName] = value;
 
         let x = createNode('input', null, {
-            type: 'number',
-            value: 'value',
+            type: 'text',
+            oldvalue: value,
             ...paramSpecs,
         });
         if (!paramSpecs.ignore) // ignored == does not add to paramName and does not update.
-            x.addEventListener('change', (x) => {
-                dynamic_parameters[paramName] = parseFloat(x.target.value);
-                render();
+            x.addEventListener('change', (y) => {
+                let x = y.target;
+                try {
+                    let a = math.evaluate(x.value);
+                    if (isNaN(a)) throw new Error('Not a number!');
+                    x.value = a;
+                    x.setAttribute('oldvalue',a);
+                    dynamic_parameters[paramName] = a;
+                    render();
+                } catch {
+                    x.value = x.getAttribute('oldvalue');
+                }
             })
         if (paramSpecs.onchange) x.addEventListener('change', paramSpecs.onchange);
 
@@ -443,12 +452,7 @@ function init() {
     createFormulaBlocks();
 }
 
-if (document.readyState === 'complete') init();
-else {
-    document.onreadystatechange = () => {
-        if (document.readyState === 'complete') init();
-    }
-}
+window.addEventListener('load',init)
 
 
 //#endregion
