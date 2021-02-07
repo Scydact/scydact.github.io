@@ -71,7 +71,7 @@
                             },
                         },
                         formula: {
-                            tex: '$$\\textrm{F} = \\textrm{P}\\cdot\\frac{1}{(1+i)^n}$$',
+                            tex: '$$\\textrm{P} = \\textrm{F}\\cdot\\frac{1}{(1+i)^n}$$',
                             dynamic: (p, v) => {
                                 let exp = (p.n === 1) ? '' : `^{${p.n}}`;
                                 return `$$ P = (${p.F})\\frac{1}{(1 + ${p.i * 0.01})${exp}} = ${v.P}$$`
