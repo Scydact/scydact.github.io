@@ -238,7 +238,7 @@ function buildFormula(opts) {
                 let x = y.target;
                 let ov = x.getAttribute('oldvalue');
                 try {
-                    let a = math.evaluate(x.value);
+                    let a = math.evaluate(x.value.replace(/,/g,''));
                     if (isNaN(a)) throw new Error('Not a number!');
                     x.value = a;
                     x.setAttribute('oldvalue', a);

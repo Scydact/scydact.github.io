@@ -44,11 +44,45 @@
     <main>
         <h2>Factores</h2>
         <div class='col2'>
-            <article class='landscape' style="background-color: #FDEDEC;">
-                <h4>Factor fundamental: Interés compuesto (F/P)</h4>
-                <p><b>Nota:</b> Para simular el factor P/F, usar periodo negativo
-                    y asumir que la entrada $\textrm{VP=VF}$, y la salida $\textrm{VF=VP}$.
-                </p>
+
+            <article style="background-color: #FDEDEC;">
+                <h4>Factor fundamental: Interés compuesto $(P/F)$</h4>
+                <code class='buildformula'>
+                    {
+                        param: {
+                            i: { name: 'Interes (i%)', 'data-type': 'interes', value: 10 },
+                            n: { name: 'Periodo (n)', value: 1, step: 1 },
+                            F: { name: 'Valor futuro (F)', value: 100 },
+                        },
+                        out: {
+                            factor: {
+                                name: 'P/F',
+                                value: (p) => {
+                                    let { i, n } = p;
+                                    i = i * 0.01;
+                                    return i_factor = 1 / (1 + i) ** n;
+                                },
+                                format: ff,
+                            },
+                            P: {
+                                name: 'Valor presente (P)',
+                                value: (p, v) => p.F * v.factor,
+                                format: f$,
+                            },
+                        },
+                        formula: {
+                            tex: '$$\\textrm{F} = \\textrm{P}\\cdot\\frac{1}{(1+i)^n}$$',
+                            dynamic: (p, v) => {
+                                let exp = (p.n === 1) ? '' : `^{${p.n}}`;
+                                return `$$ P = (${p.F})\\frac{1}{(1 + ${p.i * 0.01})${exp}} = ${v.P}$$`
+                            },
+                        },
+                    }
+                </code>
+            </article>
+
+            <article style="background-color: #FDEDEC;">
+                <h4>Factor fundamental: Interés compuesto $(F/P)$</h4>
                 <code class='buildformula'>
                     {
                         param: {
@@ -76,7 +110,7 @@
                             tex: '$$\\textrm{F} = \\textrm{P}\\cdot(1+i)^n$$',
                             dynamic: (p, v) => {
                                 let exp = (p.n === 1) ? '' : `^{${p.n}}`;
-                                return `$$ \\textrm{F} = (${p.P})(1 + ${p.i * 0.01})${exp} = ${v.F}$$`
+                                return `$$ F = (${p.P})(1 + ${p.i * 0.01})${exp} = ${v.F}$$`
                             },
                         },
                     }
@@ -84,7 +118,7 @@
             </article>
 
             <article style="background-color: #FDF6EC">
-                <h4>Factor de valor presente de serie uniforme (FVPSU o P/A)</h4>
+                <h4>Factor de valor presente de serie uniforme (FVPSU o $P/A$)</h4>
                 <code class='buildformula'>
                     {
                         param: {
@@ -118,7 +152,7 @@
             </article>
 
             <article style="background-color: #FDF6EC">
-                <h4>Factor de recuperación de capital (FRC o A/P)</h4>
+                <h4>Factor de recuperación de capital (FRC o $A/P$)</h4>
                 <code class='buildformula'>
                     {
                         param: {
@@ -152,7 +186,7 @@
             </article>
 
             <article style="background-color: #ECFDF6">
-                <h4>Factor de cantidad compuesta de una serie uniforme (FCCSU o F/A):</h4>
+                <h4>Factor de cantidad compuesta de una serie uniforme (FCCSU o $F/A$):</h4>
                 <code class='buildformula'>
                     {
                         param: {
@@ -186,7 +220,7 @@
             </article>
 
             <article style="background-color: #ECFDF6">
-                <h4>Factor de fondo de amortización (A/F):</h4>
+                <h4>Factor de fondo de amortización $(A/F)$:</h4>
                 <code class='buildformula'>
                     {
                         param: {
@@ -219,8 +253,8 @@
                 </code>
             </article>
 
-            <article style="background-color: #f3ecfd">
-                <h4>Factor de valor presente de gradiente aritmético (P/G)</h4>
+            <article style="background-color: #ecedfd">
+                <h4>Factor de valor presente de gradiente aritmético $(P_G/G)$</h4>
                 <p>Recordar que el gradiente siempre empieza en t=2 <br>(se asume que el primer gradiente es multiplo
                     n=0)</p>
                 <code class='buildformula'>
@@ -259,8 +293,8 @@
                 </code>
             </article>
 
-            <article style="background-color: #f3ecfd">
-                <h4>Factor de valor anual de gradiente aritmético (P/A)</h4>
+            <article style="background-color: #ecedfd">
+                <h4>Factor de valor anual de gradiente aritmético $(A_G/G)$</h4>
                 <p>Recordar que el gradiente siempre empieza en t=2.</p>
                 <code class='buildformula'>
                     {
@@ -292,6 +326,69 @@
                                 let { G, n, i } = p;
                                 i = i * 0.01;
                                 return `$$A_G = ${G}\\left[\\frac{1}{${i}}-\\frac{${n}}{(1+${i})^{${n}}-1}\\right]=${v.A}$$`
+                            },
+                        },
+                    }
+                </code>
+            </article>
+
+            <article style="background-color: #f3ecfd">
+                <h4>Factor de valor presente de gradiente aritmético $(P_g/A)$</h4>
+                <p>Recordar que el gradiente siempre empieza en t=2.</p>
+                <code class='buildformula'>
+                    {
+                        param: {
+                            i: { name: 'Interes (i%)', 'data-type': 'interes', value: 10 },
+                            g: { name: 'Gradiente (g%)', value: 5 },
+                            n: { name: 'Periodo (n)', value: 5, step: 1 },
+                            A: { name: 'Flujo inicial (A)', value: 100 },
+                        },
+                        out: {
+                            subfactor: {
+                                name: 'i/g ratio',
+                                format: ff,
+                                value: (p) => {
+                                    let { n, i, g } = p;
+                                    i = i * 0.01;
+                                    g = g * 0.01;
+                                    return ((1 + g) / (1 + i)) ** n;
+                                },
+                            },
+                            factor: {
+                                name: 'Pg/A1',
+                                format: ff,
+                                value: (p, o) => {
+                                    let { n, i, g } = p;
+                                    let { subfactor } = o;
+                                    i = i * 0.01;
+                                    g = g * 0.01;
+                                    if (subfactor === 1) {
+                                        return n / (n + i);
+                                    } else {
+                                        return (1 - subfactor) / (i - g);
+                                    }
+                                },
+                            },
+                            P: {
+                                name: 'Presente (P)',
+                                value: (p, o) => p.A * o.factor,
+                                format: f$,
+                            },
+                        },
+                        formula: {
+                            tex: '$$P_G = A_1\\left[\\frac{1-(\\frac{1+g}{1+i})^{n}}{i-g}\\right] \\quad g \\neq i$$' +
+                                '$$P_G = \\frac{nA_1}{(1+i)} \\quad g = i$$',
+                            dynamic: (p, v) => {
+                                let { g, n, i, A } = p;
+                                let { subfactor } = v._UNFORMATTED;
+                                a = subfactor;
+                                i = i * 0.01;
+                                g = g * 0.01;
+                                if (subfactor === 1) {
+                                    return `$$P_G = \\frac{(${n})(${A})}{(1+${i})}$$`;
+                                } else {
+                                    return `$$P_G = ${A}\\left[\\frac{1-(\\frac{1+${g}}{1+${i}})^{${n}}}{${i}-${g}}\\right]$$`
+                                }
                             },
                         },
                     }
