@@ -1,6 +1,16 @@
+import { lineParser } from "./commands.js";
+function setWin(params) {
+    let w = window as any;
+    for (const key in params) {
+        const val = params[key];
+        window[key] = val;
+    }
+}
+setWin({ p: lineParser });
+
 let SVG_DOCSTRING = 'http://www.w3.org/2000/svg';
 let NODES = {
-    svg: document.createElementNS(SVG_DOCSTRING,'svg') as unknown as SVGSVGElement,
+    svg: document.createElementNS(SVG_DOCSTRING, 'svg') as unknown as SVGSVGElement,
     ta_in: document.createElement('textarea'),
     ta_style: document.createElement('textarea'),
     buffer: document.createElement('div'),
@@ -532,6 +542,7 @@ let renderGroup = {
 // First render
 window.addEventListener('load', async () => {
     DEFAULT_VALUES.style = await getDefaultCss();
+    setWin({ DEFAULT_VALUES, render });
 
     NODES.ta_in.id = 'txtinput';
     document.getElementById('container_in').appendChild(NODES.ta_in);

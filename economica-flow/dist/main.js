@@ -7,6 +7,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+import { lineParser } from "./commands.js";
+function setWin(params) {
+    let w = window;
+    for (const key in params) {
+        const val = params[key];
+        window[key] = val;
+    }
+}
+setWin({ p: lineParser });
 let SVG_DOCSTRING = 'http://www.w3.org/2000/svg';
 let NODES = {
     svg: document.createElementNS(SVG_DOCSTRING, 'svg'),
@@ -389,12 +398,12 @@ function getScale() {
     return parseFloat(v) / HEIGHT;
 }
 const DOWNLOADS = {
-    png: () => __awaiter(this, void 0, void 0, function* () { return downloadFile(yield getPngBlobAsync(NODES.svg, getScale()), FILENAME + '.png'); }),
-    svg: () => __awaiter(this, void 0, void 0, function* () { return downloadFile(getSvgBlob(NODES.svg), FILENAME + '.svg'); }),
+    png: () => __awaiter(void 0, void 0, void 0, function* () { return downloadFile(yield getPngBlobAsync(NODES.svg, getScale()), FILENAME + '.png'); }),
+    svg: () => __awaiter(void 0, void 0, void 0, function* () { return downloadFile(getSvgBlob(NODES.svg), FILENAME + '.svg'); }),
 };
 const OTHER = {
-    clipboard: () => __awaiter(this, void 0, void 0, function* () { return copyBlobToClipboard(yield getPngBlobAsync(NODES.svg, getScale(), true)); }),
-    newTab: () => __awaiter(this, void 0, void 0, function* () {
+    clipboard: () => __awaiter(void 0, void 0, void 0, function* () { return copyBlobToClipboard(yield getPngBlobAsync(NODES.svg, getScale(), true)); }),
+    newTab: () => __awaiter(void 0, void 0, void 0, function* () {
         const blob = getSvgBlob(NODES.svg); //await getPngBlobAsync(svg, getScale());
         const blobUrl = URL.createObjectURL(blob);
         let x = window.open(blobUrl, '_blank');
@@ -476,8 +485,9 @@ let renderGroup = {
     title: addSVGNode(NODES.svg, 'g', { class: 'text-title' }),
 };
 // First render
-window.addEventListener('load', () => __awaiter(this, void 0, void 0, function* () {
+window.addEventListener('load', () => __awaiter(void 0, void 0, void 0, function* () {
     DEFAULT_VALUES.style = yield getDefaultCss();
+    setWin({ DEFAULT_VALUES, render });
     NODES.ta_in.id = 'txtinput';
     document.getElementById('container_in').appendChild(NODES.ta_in);
     NODES.ta_style.id = 'styleinput';

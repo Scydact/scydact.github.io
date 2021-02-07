@@ -31,7 +31,7 @@ export class Parser {
             const nextState = this.parserStateTransformerFn(parserState);
             if (nextState.isError)
                 return nextState;
-            return updateParserResult(nextState, fn(nextState.result));
+            return updateParserResult(nextState, fn(nextState.result, nextState));
         });
     }
     /**
@@ -58,6 +58,14 @@ export class Parser {
             return updateParserError(nextState, fn(nextState.error, nextState.index));
         });
     }
+    log(extra = '') {
+        return new Parser(parserState => {
+            const nextState = this.parserStateTransformerFn(parserState);
+            console.log(extra);
+            console.log(nextState);
+            return nextState;
+        });
+    }
 }
 /** Parser that matches a string (case sensitive) */
 export const str = (s, caseSensitive = true) => new Parser(parserState => {
@@ -77,21 +85,32 @@ export const str = (s, caseSensitive = true) => new Parser(parserState => {
     }
     return updateParserError(parserState, `str: Tried to match "${s}", but got "${target.slice(index, index + 10)}"`);
 });
-/** Parser that matches the given regex */
-export const regex = (regex) => new Parser(parserState => {
+/** Parser that simply returns the entire string.
+ *
+ * Note: Not suitable for use in between() or many(), as this will exhaust the targetString.
+ */
+export const remainder = new Parser(parserState => {
     const { target, index, isError } = parserState;
     if (isError) {
         return parserState;
     }
     const slicedTarget = target.slice(index);
-    if (slicedTarget.length === 0) {
-        return updateParserError(parserState, `regex: Got Unexpected end of input.`);
+    return updateParserState(parserState, index + slicedTarget.length, slicedTarget);
+});
+/** Parser that matches the given regex. */
+export const regex = (regex, parseErrorString = 'regex: Could not match ${1} at index ${0}') => new Parser(parserState => {
+    const { target, index, isError } = parserState;
+    if (isError) {
+        return parserState;
     }
+    const slicedTarget = target.slice(index);
     const regexMatch = slicedTarget.match(regex);
     if (regexMatch) {
         return updateParserState(parserState, index + regexMatch[0].length, regexMatch[0]);
     }
-    return updateParserError(parserState, `regex: Could not match ${regex.toString()} at index ${index}`);
+    return updateParserError(parserState, parseErrorString
+        .replace('${0}', index.toString())
+        .replace('${1}', regex.toString()));
 });
 const lettersRegex = /^[A-Za-z]+/;
 /** Parser that matches letters */
@@ -127,6 +146,39 @@ export const digits = new Parser(parserState => {
     }
     return updateParserError(parserState, `digits: Could not match digits at index ${index}`);
 });
+/** Parser that matches a number in format +-123.123 */
+const floatRegex = /^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)/;
+export const simpleFloat = new Parser(parserState => {
+    const { target, index, isError } = parserState;
+    if (isError) {
+        return parserState;
+    }
+    const slicedTarget = target.slice(index);
+    if (slicedTarget.length === 0) {
+        return updateParserError(parserState, `simpleFloat: Got Unexpected end of input.`);
+    }
+    const regexMatch = slicedTarget.match(floatRegex);
+    if (regexMatch) {
+        return updateParserState(parserState, index + regexMatch[0].length, regexMatch[0]);
+    }
+    return updateParserError(parserState, `simpleFloat: Could not match number at index ${index}`);
+});
+const intRegex = /^[+-]?([0-9]+)/;
+export const simpleInt = new Parser(parserState => {
+    const { target, index, isError } = parserState;
+    if (isError) {
+        return parserState;
+    }
+    const slicedTarget = target.slice(index);
+    if (slicedTarget.length === 0) {
+        return updateParserError(parserState, `simpleInt: Got Unexpected end of input.`);
+    }
+    const regexMatch = slicedTarget.match(intRegex);
+    if (regexMatch) {
+        return updateParserState(parserState, index + regexMatch[0].length, regexMatch[0]);
+    }
+    return updateParserError(parserState, `simpleInt: Could not match number at index ${index}`);
+});
 /** Parser that tries to match a sequence of parsers */
 export const sequenceOf = parsers => new Parser(parserState => {
     if (parserState.isError) {
@@ -144,7 +196,7 @@ export const sequenceOf = parsers => new Parser(parserState => {
     return updateParserResult(nextState, results);
 });
 /** Parser that tries to match a single parser of the given parsers */
-export const choice = parsers => new Parser(parserState => {
+export const choice = (parsers, parseErrorString = 'choice: Unable to match with any parser at index ${0}') => new Parser(parserState => {
     if (parserState.isError) {
         return parserState;
     }
@@ -154,8 +206,12 @@ export const choice = parsers => new Parser(parserState => {
             return nextState;
         }
     }
-    return updateParserError(parserState, `choice: Unable to match with any parser at index ${parserState.index}`);
+    return updateParserError(parserState, parseErrorString.replace('${0}', parserState.index.toString()));
 });
+export const number = choice([
+    sequenceOf([simpleFloat, str('e', false), simpleInt]).map(x => x.join('')),
+    simpleFloat,
+], 'number: unable to match any number at ${0}');
 /**
  * Parser that tries to match 0 or more of the given parsers.
  * This will never result in a error.
@@ -257,8 +313,8 @@ export const sepBy1 = (separatorParser) => (valueParser) => new Parser(parserSta
     }
     return updateParserResult(nextState, results);
 });
-/** Matches 0 or 1 instances of the parser */
-export const boolean = (parser) => new Parser(parserState => {
+/** Parser that matches 0 or 1 instances of the parser */
+export const optional = (parser) => new Parser(parserState => {
     if (parserState.isError) {
         return parserState;
     }
@@ -267,7 +323,7 @@ export const boolean = (parser) => new Parser(parserState => {
         return testState;
     }
     else {
-        return parserState;
+        return updateParserResult(parserState, null);
     }
 });
 /** Parser that tries to match content located between two parsers  */
