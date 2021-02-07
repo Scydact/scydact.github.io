@@ -19,23 +19,26 @@ function Tabs() {
             }
 
             let closeAllTabs = () => {
-                tabButtons.forEach(element => {element.classList.remove('active');});
-                tabContents.forEach(element => {element.classList.add('disabled');});
+                for (let element of tabButtons)
+                    element.classList.remove('active');
+
+                for (let element of tabContents)
+                    element.classList.add('disabled');
             }
 
             for (let i = 0; i < tabButtons.length; i++) {
                 let cTabButton = tabButtons[i];
                 let cTabContent = tabContents[i];
-                
+
                 cTabButton['associatedTab'] = cTabContent;
-                
+
                 if (!cTabButton.openTab) {
-                    cTabButton['openTab'] = function() {
+                    cTabButton['openTab'] = function () {
                         closeAllTabs();
                         this.classList.add('active');
                         this['associatedTab'].classList.remove('disabled');
                     }
-                    cTabButton.onclick = function() {this.openTab()};
+                    cTabButton.onclick = function () { this.openTab() };
                 }
             }
             tabButtons[0]['openTab']();

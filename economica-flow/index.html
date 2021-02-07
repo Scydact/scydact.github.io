@@ -5,8 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generador de diagrama de flujo de efectivo</title>
-    <script defer src="https://unpkg.com/canvg@3.0.1/lib/umd.js"></script>
-    <script defer src="economica-flow.js"></script>
+    <script defer src="dist/main.js"></script>
     <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="style.css">
 
@@ -72,13 +71,13 @@
             <p>Any text command (m, %, h...) will assume the rest of the line as the text.</p>
         </div>
 
-        <div class='tab-content'>
+        <div id='container_style' class='tab-content'>
             <h3>Plot style</h3>
             <p>
                 Change the CSS style of the plot here.
                 <br>(Remove all to reset to defaults)
             </p>
-            <textarea id='styleinput'></textarea>
+            <!-- <textarea id='styleinput'></textarea> -->
         </div>
 
         <div class='tab-content'>
@@ -98,21 +97,18 @@
     </div>
 
 
-    <div class='card'>
+    <div id='container_in' class='card'>
         <h2>Plot Data</h2>
         <button onclick="
         document.getElementById('txtinput').value=DEFAULT_VALUES.data;
         render();
         ">Reset</button>
-        <textarea id=txtinput></textarea>
+        <!-- <textarea id=txtinput></textarea> -->
     </div>
 
     <div id=log></div>
-    <div id=canvasWrapper class='card'>
-        <svg id=canvas></svg>
-    </div>
-
-    <div id='hiddenBuffer' class='hidden'></div>
+    <div id=container_canvas class='card'></div>
+    <!-- <div id='hiddenBuffer' class='hidden'></div> -->
     <footer>
         Scydact 2021.
     </footer>
