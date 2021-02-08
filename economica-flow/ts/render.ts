@@ -127,7 +127,8 @@ export function render(SVG: HTMLElement, size: [number, number], flow: i_flow) {
     function drawArrowTextNumber(parent, x, dy, data: number[], flow: i_flow) {
         let nround = (n: number) => round(n, flow.meta.roundDigits);
         const result = nround(data.reduce((p, c) => p + c, 0));
-        if (!result) return;
+        if (!result) { return; }
+
 
         let a_def = {
             'text-anchor': 'start',
@@ -135,6 +136,8 @@ export function render(SVG: HTMLElement, size: [number, number], flow: i_flow) {
             y: (1 - dy) * (HEIGHT / 2),
             class: 'arrows-number',
         };
+
+        if (flow.meta.numberRotated) a_def.class += ' rotate';
 
         if (data.length > 1) {
             //let text_anchor = (Math.sign(result) > 0) ? 'start' : 'end';

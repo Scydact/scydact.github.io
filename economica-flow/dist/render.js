@@ -108,14 +108,17 @@ export function render(SVG, size, flow) {
     function drawArrowTextNumber(parent, x, dy, data, flow) {
         let nround = (n) => round(n, flow.meta.roundDigits);
         const result = nround(data.reduce((p, c) => p + c, 0));
-        if (!result)
+        if (!result) {
             return;
+        }
         let a_def = {
             'text-anchor': 'start',
             x,
             y: (1 - dy) * (HEIGHT / 2),
             class: 'arrows-number',
         };
+        if (flow.meta.numberRotated)
+            a_def.class += ' rotate';
         if (data.length > 1) {
             //let text_anchor = (Math.sign(result) > 0) ? 'start' : 'end';
             let nsum = data

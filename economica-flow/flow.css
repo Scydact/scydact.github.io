@@ -7,18 +7,43 @@
 
 .timestamps {
   font: 15px sans-serif;
+  transform: translate(5px, 20px);
 }
 
-.arrows-text-number {
+.arrows-number {
   font: bold 20px sans-serif;
+  fill: black;
+  stroke: none;
+  transform: translate(.5em,.3em);
+  transform-box: fill-box;
 }
-.arrows-text-text {
+
+.arrows-number.rotate {
+  transform: rotate(90deg) translate(0%,-40%);
+  transform-origin: left bottom;
+}
+.negative-arrow .arrows-number.rotate {
+  transform-origin: left bottom;
+  transform: rotate(90deg) translate(-100%, 140%);
+}
+
+.arrows-text {
   font: 20px sans-serif;
+  fill: black;
+  stroke: none;
+  
+  transform-box: fill-box;
+  transform: translate(0,calc(-100% - .5em));
 }
+.negative-arrow .arrows-text {
+  transform: translate(0,.5em);
+}
+
 .text-small {
-  font-size: 14px;
+  font-size: 0px;
   fill: rgba(0,0,0,0.5);
 }
+
 .text-title {
   font: 32px sans-serif;
 }

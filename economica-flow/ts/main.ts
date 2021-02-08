@@ -161,10 +161,14 @@ setWin({ OTHER, DOWNLOADS });
 //#endregion
 
 //#region COOKIES
-const COOKIE_NAME = 'economica-flow-v0';
+const COOKIE_NAME = 'economica-flow-v1';
 const DEFAULT_VALUES = {
     style: '',
     meta: `
+    round 2
+    overlap SUM
+    sepflow 0
+    numrot 0
 
     `.trim().split('\n').map(x => x.trim()).join('\n'),
     data: `
