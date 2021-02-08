@@ -187,9 +187,9 @@ function processLines(lines) {
     // and add some respective period-to-svg-x function.
     let numValues = {};
     for (let key in state.values) {
-        numValues[key] = state.values[key]
+        numValues[key] = fixFloatError(state.values[key]
             .filter(x => x.type === 'flowSimple')
-            .reduce((p, c) => p + c.value.value, 0);
+            .reduce((p, c) => p + c.value.value, 0));
     }
     let x = {
         keys: keys,

@@ -55,11 +55,15 @@
                             F: { name: 'Valor futuro (F)', value: 100 },
                         },
                         out: {
+                            i: {
+                                display: false,
+                                value: (p) => ffe(p.i * 0.01),
+                            },
                             factor: {
                                 name: 'P/F',
-                                value: (p) => {
-                                    let { i, n } = p;
-                                    i = i * 0.01;
+                                value: (p, o) => {
+                                    let { n } = p;
+                                    let { i } = o;
                                     return i_factor = 1 / (1 + i) ** n;
                                 },
                                 format: ff,
@@ -74,7 +78,7 @@
                             tex: '$$\\textrm{P} = \\textrm{F}\\cdot\\frac{1}{(1+i)^n}$$',
                             dynamic: (p, v) => {
                                 let exp = (p.n === 1) ? '' : `^{${p.n}}`;
-                                return `$$ P = (${p.F})\\frac{1}{(1 + ${p.i * 0.01})${exp}} = ${v.P}$$`
+                                return `$$ P = (${p.F})\\frac{1}{(1 + ${v.i})${exp}} = ${v.P}$$`
                             },
                         },
                     }
@@ -91,11 +95,15 @@
                             P: { name: 'Valor presente (P)', value: 100 },
                         },
                         out: {
+                            i: {
+                                display: false,
+                                value: (p) => ffe(p.i * 0.01),
+                            },
                             factor: {
                                 name: 'F/P',
-                                value: (p) => {
-                                    let { i, n } = p;
-                                    i = i * 0.01;
+                                value: (p, o) => {
+                                    let { n } = p;
+                                    let { i } = o;
                                     return i_factor = (1 + i) ** n;
                                 },
                                 format: ff,
@@ -110,7 +118,7 @@
                             tex: '$$\\textrm{F} = \\textrm{P}\\cdot(1+i)^n$$',
                             dynamic: (p, v) => {
                                 let exp = (p.n === 1) ? '' : `^{${p.n}}`;
-                                return `$$ F = (${p.P})(1 + ${p.i * 0.01})${exp} = ${v.F}$$`
+                                return `$$ F = (${p.P})(1 + ${v.i})${exp} = ${v.F}$$`
                             },
                         },
                     }
@@ -127,11 +135,15 @@
                             A: { name: 'Anualidad (A)', value: 100 },
                         },
                         out: {
+                            i: {
+                                display: false,
+                                value: (p) => ffe(p.i * 0.01),
+                            },
                             factor: {
                                 name: 'P/A',
-                                value: (p) => {
-                                    let { i, n } = p;
-                                    i = i * 0.01;
+                                value: (p, o) => {
+                                    let { n } = p;
+                                    let { i } = o;
                                     let i_factor = (1 + i) ** n;
                                     return (i_factor - 1) / (i * i_factor);
                                 },
@@ -145,7 +157,7 @@
                         },
                         formula: {
                             tex: '$$P = A\\left[\\frac{(1+i)^n-1}{i(1+i)^n}\\right]$$',
-                            dynamic: (p, v) => `$$P = ${p.A}\\left[\\frac{(1+${p.i * 0.01})^{${p.n}}-1}{${p.i * 0.01}(1+${p.i * 0.01})^{${p.n}}}\\right]=${v.P}$$`,
+                            dynamic: (p, v) => `$$P = ${p.A}\\left[\\frac{(1+${v.i})^{${p.n}}-1}{${v.i}(1+${v.i})^{${p.n}}}\\right]=${v.P}$$`,
                         },
                     }
                 </code>
@@ -161,11 +173,15 @@
                             P: { name: 'Valor presente (P)', value: 100 },
                         },
                         out: {
+                            i: {
+                                display: false,
+                                value: (p) => ffe(p.i * 0.01),
+                            },
                             factor: {
                                 name: 'A/P',
-                                value: (p) => {
-                                    let { i, n } = p;
-                                    i = i * 0.01;
+                                value: (p, o) => {
+                                    let { n } = p;
+                                    let { i } = o;
                                     let i_factor = (1 + i) ** n;
                                     return (i * i_factor) / (i_factor - 1);
                                 },
@@ -179,7 +195,7 @@
                         },
                         formula: {
                             tex: '$$A = P\\left[\\frac{i(1+i)^n}{(1+i)^n-1}\\right]$$',
-                            dynamic: (p, v) => `$$A = ${p.P}\\left[\\frac{${p.i * 0.01}(1+${p.i * 0.01})^{${p.n}}}{(1+${p.i * 0.01})^{${p.n}}-1}\\right]=${v.A}$$`,
+                            dynamic: (p, v) => `$$A = ${p.P}\\left[\\frac{${v.i}(1+${v.i})^{${p.n}}}{(1+${v.i})^{${p.n}}-1}\\right]=${v.A}$$`,
                         },
                     }
                 </code>
@@ -195,11 +211,15 @@
                             A: { name: 'Anualidad (A)', value: 100 },
                         },
                         out: {
+                            i: {
+                                display: false,
+                                value: (p) => ffe(p.i * 0.01),
+                            },
                             factor: {
                                 name: 'F/A',
-                                value: (p) => {
-                                    let { i, n } = p;
-                                    i = i * 0.01;
+                                value: (p, o) => {
+                                    let { n } = p;
+                                    let { i } = o;
                                     let i_factor = (1 + i) ** n;
                                     return (i_factor - 1) / i;
                                 },
@@ -213,7 +233,7 @@
                         },
                         formula: {
                             tex: '$$F = A\\left[\\frac{(1+i)^n-1}{i}\\right]$$',
-                            dynamic: (p, v) => `$$F = ${p.A}\\left[\\frac{(1+${p.i * 0.01})^{${p.n}}-1}{${p.i * 0.01}}\\right]=${v.F}$$`,
+                            dynamic: (p, v) => `$$F = ${p.A}\\left[\\frac{(1+${v.i})^{${p.n}}-1}{${v.i}}\\right]=${v.F}$$`,
                         },
                     }
                 </code>
@@ -229,11 +249,15 @@
                             F: { name: 'Valor futuro (F)', value: 100 },
                         },
                         out: {
+                            i: {
+                                display: false,
+                                value: (p) => ffe(p.i * 0.01),
+                            },
                             factor: {
                                 name: 'A/F',
-                                value: (p) => {
-                                    let { i, n } = p;
-                                    i = i * 0.01;
+                                value: (p, o) => {
+                                    let { n } = p;
+                                    let { i } = o;
                                     let i_factor = (1 + i) ** n;
                                     return i / (i_factor - 1);
                                 },
@@ -247,7 +271,7 @@
                         },
                         formula: {
                             tex: '$$A = F\\left[\\frac{i}{(1+i)^n-1}\\right]$$',
-                            dynamic: (p, v) => `$$A = ${p.F}\\left[\\frac{${p.i * 0.01}}{(1+${p.i * 0.01})^{${p.n}}-1}\\right]=${v.A}$$`,
+                            dynamic: (p, v) => `$$A = ${p.F}\\left[\\frac{${v.i}}{(1+${v.i})^{${p.n}}-1}\\right]=${v.A}$$`,
                         },
                     }
                 </code>
@@ -255,7 +279,8 @@
 
             <article style="background-color: #ecedfd">
                 <h4>Factor de valor presente de gradiente aritmético $(P_G/G)$</h4>
-                <p>Recordar que el primer gradiente siempre se localiza en t=2.<br>(se asume que el primer gradiente es multiplo
+                <p>Recordar que el primer gradiente siempre se localiza en t=2.<br>(se asume que el primer gradiente es
+                    multiplo
                     n=0)</p>
                 <code class='buildformula'>
                     {
@@ -265,11 +290,15 @@
                             G: { name: 'Gradiente (G)', value: 100 },
                         },
                         out: {
+                            i: {
+                                display: false,
+                                value: (p) => ffe(p.i * 0.01),
+                            },
                             factor: {
                                 name: 'P/G',
-                                value: (p) => {
-                                    let { n, i } = p;
-                                    i = i * 0.01;
+                                value: (p, o) => {
+                                    let { n } = p;
+                                    let { i } = o;
                                     let i_factor = (1 + i) ** n;
                                     return (1 / i) * ((i_factor - 1) / (i * i_factor) - n / i_factor);
                                 },
@@ -284,8 +313,8 @@
                         formula: {
                             tex: '$$P_G = \\frac{G}{i}\\left[\\frac{(1+i)^n-1}{i(1+i)^n}-\\frac{n}{(1+i)^n}\\right]$$',
                             dynamic: (p, v) => {
-                                let { G, n, i } = p;
-                                i = i * 0.01;
+                                let { G, n } = p;
+                                let { i } = v;
                                 return `$$P_G = \\frac{${G}}{${i}}\\left[\\frac{(1+${i})^{${n}}-1}{${i}(1+${i})^{${n}}}-\\frac{${n}}{(1+${i})^{${n}}}\\right]=${v.P}$$`
                             },
                         },
@@ -304,11 +333,15 @@
                             G: { name: 'Gradiente (G)', value: 100 },
                         },
                         out: {
+                            i: {
+                                display: false,
+                                value: (p) => ffe(p.i * 0.01),
+                            },
                             factor: {
                                 name: 'A/G',
-                                value: (p) => {
-                                    let { n, i } = p;
-                                    i = i * 0.01;
+                                value: (p, o) => {
+                                    let { n } = p;
+                                    let { i } = o;
                                     let i_factor = (1 + i) ** n;
                                     return 1 / i - n / (i_factor - 1);
                                 },
@@ -323,8 +356,8 @@
                         formula: {
                             tex: '$$A_G = G\\left[\\frac{1}{i}-\\frac{n}{(1+i)^{n}-1}\\right]$$',
                             dynamic: (p, v) => {
-                                let { G, n, i } = p;
-                                i = i * 0.01;
+                                let { G, n } = p;
+                                let { i } = v;
                                 return `$$A_G = ${G}\\left[\\frac{1}{${i}}-\\frac{${n}}{(1+${i})^{${n}}-1}\\right]=${v.A}$$`
                             },
                         },
@@ -344,13 +377,20 @@
                             A: { name: 'Flujo inicial (A)', value: 100 },
                         },
                         out: {
+                            i: {
+                                display: false,
+                                value: (p) => ffe(p.i * 0.01),
+                            },
+                            g: {
+                                display: false,
+                                value: (p) => ffe(p.g * 0.01),
+                            },
                             subfactor: {
                                 name: 'i/g ratio',
                                 format: ff,
-                                value: (p) => {
-                                    let { n, i, g } = p;
-                                    i = i * 0.01;
-                                    g = g * 0.01;
+                                value: (p, o) => {
+                                    let { n } = p;
+                                    let { i, g } = o;
                                     return ((1 + g) / (1 + i)) ** n;
                                 },
                             },
@@ -358,10 +398,8 @@
                                 name: 'Pg/A1',
                                 format: ff,
                                 value: (p, o) => {
-                                    let { n, i, g } = p;
-                                    let { subfactor } = o;
-                                    i = i * 0.01;
-                                    g = g * 0.01;
+                                    let { n } = p;
+                                    let { subfactor, i, g } = o;
                                     if (subfactor === 1) {
                                         return n / (n + i);
                                     } else {
@@ -379,11 +417,10 @@
                             tex: '$$P_G = A_1\\left[\\frac{1-(\\frac{1+g}{1+i})^{n}}{i-g}\\right] \\quad g \\neq i$$' +
                                 '$$P_G = \\frac{nA_1}{(1+i)} \\quad g = i$$',
                             dynamic: (p, v) => {
-                                let { g, n, i, A } = p;
+                                let { n, A } = p;
+                                let { i, g } = v;
                                 let { subfactor } = v._UNFORMATTED;
                                 a = subfactor;
-                                i = i * 0.01;
-                                g = g * 0.01;
                                 if (subfactor === 1) {
                                     return `$$P_G = \\frac{(${n})(${A})}{(1+${i})}$$`;
                                 } else {
@@ -440,7 +477,7 @@
                         out: {
                             i: {
                                 name: 'Interes (i%)',
-                                value: (p) => tryFindPARate(p.P, p.A, p.n).map(x => 100 * x),
+                                value: (p) => tryFindPARate(p.P, p.A, p.n).map(x => ffe(100 * x)),
                             },
                         },
                         formula: {

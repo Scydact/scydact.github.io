@@ -132,8 +132,9 @@ const format = (num, fraction = 2, cropZeros = true) => new Intl.NumberFormat([]
     minimumFractionDigits: (cropZeros) ? 0 : fraction,
     maximumFractionDigits: fraction,
 }).format(num);
-var f$ = (n) => format(n, GLOBAL_PARAMS.digits_currency, !!GLOBAL_PARAMS.trim_zeros_currency);
-var ff = (n) => format(n, GLOBAL_PARAMS.digits_factor, !!GLOBAL_PARAMS.trim_zeros_factor);
+const f$ = (n) => format(n, GLOBAL_PARAMS.digits_currency, !!GLOBAL_PARAMS.trim_zeros_currency);
+const ff = (n) => format(n, GLOBAL_PARAMS.digits_factor, !!GLOBAL_PARAMS.trim_zeros_factor);
+const ffe = (val) => Number.parseFloat(val.toPrecision(15));
 
 function buildFormula(opts) {
     // let sample = 
@@ -430,8 +431,8 @@ function newtonApproximate_a_over_da(a_over_da, initvalues = [-2, -1, -0.5, 0, 0
         return array[0] === u && array.every(val => val === array[0]);
     }
     function tryPush(x) {
-        if (ans.length === 0 || ans[0] !== x) {
-            ans.push(x);
+        if (ans.length === 0 || ans[0] !== ffe(x)) {
+            ans.push(ffe(x));
             return true;
         }
         return false;

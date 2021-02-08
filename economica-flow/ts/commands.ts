@@ -235,9 +235,10 @@ function processLines(lines: i_cmd_parser_result[]) {
 
     let numValues = {}
     for (let key in state.values) {
-        numValues[key] = state.values[key]
-            .filter(x => x.type === 'flowSimple')
-            .reduce((p, c) => p + c.value.value, 0);
+        numValues[key] = fixFloatError(
+            state.values[key]
+                .filter(x => x.type === 'flowSimple')
+                .reduce((p, c) => p + c.value.value, 0));
     }
 
     let x = {
