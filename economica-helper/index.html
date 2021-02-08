@@ -422,9 +422,9 @@
                                 let { subfactor } = v._UNFORMATTED;
                                 a = subfactor;
                                 if (subfactor === 1) {
-                                    return `$$P_G = \\frac{(${n})(${A})}{(1+${i})}$$`;
+                                    return `$$P_G = \\frac{(${n})(${A})}{(1+${i})} = ${v.P}$$`;
                                 } else {
-                                    return `$$P_G = ${A}\\left[\\frac{1-(\\frac{1+${g}}{1+${i}})^{${n}}}{${i}-${g}}\\right]$$`
+                                    return `$$P_G = ${A}\\left[\\frac{1-(\\frac{1+${g}}{1+${i}})^{${n}}}{${i}-${g}}\\right] = ${v.P}$$`
                                 }
                             },
                         },
