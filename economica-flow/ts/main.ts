@@ -8,6 +8,7 @@ let NODES = {
     svg: document.createElementNS(SVG_DOCSTRING, 'svg') as unknown as SVGSVGElement,
     svg_sub: createSVGNode('g', { class: 'container' }),
     ta_in: document.createElement('textarea'),
+    ta_meta: document.createElement('textarea'),
     ta_style: null as any,
     buffer: document.createElement('div'),
 };
@@ -163,6 +164,9 @@ setWin({ OTHER, DOWNLOADS });
 const COOKIE_NAME = 'economica-flow-v0';
 const DEFAULT_VALUES = {
     style: '',
+    meta: `
+
+    `.trim().split('\n').map(x => x.trim()).join('\n'),
     data: `
     h Flujo
 
@@ -179,8 +183,8 @@ const DEFAULT_VALUES = {
 
     t 7
     m Trimestre
-    mp sin pagar
-    `.trim().split('\n').map(x => x.trim()).join('\n'),//[100, 200, 300, 400, 500].join('\n'),
+    m sin pagar
+    `.trim().split('\n').map(x => x.trim()).join('\n'),
     size: HEIGHT * 3,
     transparency: false,
 }
@@ -191,6 +195,7 @@ async function loadCookies() {
     SAVED_VALUES = { ...DEFAULT_VALUES, ...JSON.parse(x) };
 
     NODES.ta_in.value = SAVED_VALUES.data;
+    NODES.ta_meta.value = SAVED_VALUES.meta;
     SETTINGS_NODES.size.value = SAVED_VALUES.size;
     SETTINGS_NODES.transparency.checked = SAVED_VALUES.transparency
     setCss(SAVED_VALUES.style);
@@ -199,6 +204,7 @@ function saveCookies() {
     SAVED_VALUES = {
         style: getCss(),
         data: NODES.ta_in.value,
+        meta: NODES.ta_meta.value,
         size: parseInt(SETTINGS_NODES.size.value),
         transparency: SETTINGS_NODES.transparency.checked,
     }
@@ -211,21 +217,52 @@ function removeCookies() {
 //#endregion
 
 //#region ONLOAD RUN
-function doRender(data?) {
-    if (!data) data = NODES.ta_in.value;
-    let flow = createFlow(data);
+function doRender() {
+    let data = NODES.ta_in.value;
+    let meta = NODES.ta_meta.value;
+    let flow = createFlow(data, meta);
     render(NODES.svg_sub, [WIDTH, HEIGHT], flow);
+    //svgDebug();
 }
 
-function populateCmdTable() {
-    let cmds = Object.values(commands).map(x => x.desc);
-    let oTable = document.getElementById('commands-table') as HTMLTableElement;
-    for (const cmd of cmds) {
-        let r = oTable.insertRow();
-        r.insertCell().innerText = cmd[0];
-        r.insertCell().innerText = cmd[1];
+
+const svgDebug = function () {
+    const svg = NODES.svg;
+
+    const texts = svg.getElementsByClassName('arrows-text-number');
+    for (const txt of ([...texts] as SVGSVGElement[])) {
+        const bbox = txt.getBBox();
+        const a = {
+            x: bbox.x,
+            y: bbox.y,
+            width: bbox.width,
+            height: bbox.height,
+            fill: 'red',
+        }
+        txt.parentNode.insertBefore(createSVGNode('rect', a), txt)
     }
 }
+
+setWin({ svgDebug });
+
+function populateCmdTable() {
+    let cmds = Object.values(commands)
+        .map(x => x.desc)
+    let oTable = document.getElementById('commands-table') as HTMLTableElement;
+    for (const cmd of cmds.filter(x => x[0] === 'data')) {
+        let r = oTable.insertRow();
+        r.insertCell().innerText = cmd[1];
+        r.insertCell().innerText = cmd[2];
+    }
+
+    oTable = document.getElementById('meta-commands-table') as HTMLTableElement;
+    for (const cmd of cmds.filter(x => x[0] === 'meta')) {
+        let r = oTable.insertRow();
+        r.insertCell().innerText = cmd[1];
+        r.insertCell().innerText = cmd[2];
+    }
+}
+
 
 // First render
 declare const CodeMirror: any;
@@ -238,8 +275,12 @@ window.addEventListener('load', async () => {
     // Code
     NODES.ta_in.id = 'txtinput';
     document.getElementById('container_in').appendChild(NODES.ta_in);
-    NODES.ta_in.addEventListener('input',
-        (x) => doRender((x.target as HTMLTextAreaElement).value));
+    NODES.ta_in.addEventListener('input', doRender);
+
+
+    NODES.ta_meta.id = 'txtinputmeta';
+    document.getElementById('container_meta').appendChild(NODES.ta_meta);
+    NODES.ta_meta.addEventListener('input', doRender)
 
 
     // Styles
@@ -250,6 +291,7 @@ window.addEventListener('load', async () => {
     var editor = CodeMirror.fromTextArea(a, {
         lineNumbers: true,
         mode: 'css',
+        tabSize: 4,
     });
     editor.on('change', appendCss);
     editor.setSize(null, 500);

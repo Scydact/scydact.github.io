@@ -1,24 +1,24 @@
 .baseline,
 .arrows {
-    stroke-width: 3;
-    stroke      : black;
-    fill        : none;
+  stroke-width: 3;
+  stroke: black;
+  fill: none;
 }
 
 .timestamps {
-    font: 15px sans-serif;
+  font: 15px sans-serif;
 }
 
 .arrows-text-number {
-    font: bold 20px sans-serif;
+  font: bold 20px sans-serif;
 }
 .arrows-text-text {
-    font: 20px sans-serif;
+  font: 20px sans-serif;
 }
 .text-small {
-    font-size: 14px;
-    fill: rgba(0,0,0,0.5);
+  font-size: 14px;
+  fill: rgba(0,0,0,0.5);
 }
 .text-title {
-    font: 32px sans-serif;
+  font: 32px sans-serif;
 }

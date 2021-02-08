@@ -23,12 +23,13 @@
     <div class='tab-wrapper options card'>
         <div class='tab'>
             <button class='tab-link'>Commands</button>
+            <button class='tab-link'>Meta</button>
             <button class='tab-link'>Plot Style</button>
             <button class='tab-link'>Export</button>
         </div>
         <div id='commands' class='tab-content'>
             <h3>Commands:</h3>
-            <table id='commands-table'></table>
+            <table id='commands-table' class='cmd-tbl'></table>
             <h3>Multiple commands per line:</h3>
             <table>
                 <tr>
@@ -45,6 +46,17 @@
                 </tr>
             </table>
             <p>Any text command (m, %, h...) will assume the rest of the line as the text.</p>
+        </div>
+
+        <div id='container_meta' class='tab-content'>
+            <h3>Meta commands</h3>
+            <table id='meta-commands-table' class='cmd-tbl'></table>
+            <h2>Meta Data</h2>
+            <button onclick="
+            document.getElementById('txtinput').value=DEFAULT_VALUES.meta;
+            doRender();
+            ">Reset</button>
+            <!-- <textarea id=txtinput></textarea> -->
         </div>
 
         <div id='container_style' class='tab-content'>

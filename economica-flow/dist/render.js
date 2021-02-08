@@ -1,4 +1,4 @@
-import { addSVGNode, clearNode, getMinMax } from "./Utils.js";
+import { addSVGNode, clearNode, getMinMax, round } from "./Utils.js";
 function polylinePoints(...arr) {
     return arr.map(x => x.join(',')).join(' ');
 }
@@ -20,45 +20,72 @@ export function render(SVG, size, flow) {
     function drawTimestamps(flow, parent) {
         let n = flow.end - flow.start + 1;
         let d = WIDTH / n;
-        let [dx, dy] = [10, 20];
+        //let [dx, dy] = [10, 20];
         for (let i = 0; i < n; ++i) {
             let j = flow.keys[i];
             addSVGNode(parent, 'text', {
-                x: d * i + dx,
-                y: HEIGHT / 2 + dy,
+                x: d * i,
+                y: HEIGHT / 2,
             }, i + flow.start);
         }
     }
-    function drawArrows(flow, parent, text_text_parent, text_number_parent) {
+    function drawArrows(flow, parent, text_text_parent) {
         let n = flow.end - flow.start + 1;
         let dx = WIDTH / n;
-        let [min, max] = getMinMax(Object.values(flow.numValues).flat());
+        let doOverlap = flow.meta.overlapBehaviour === 'sum';
+        let sepFlow = flow.meta.sepFlows;
+        if (sepFlow) {
+            var [min, max] = getMinMax(Object.values(flow.numBiValues).flat());
+        }
+        else {
+            var [min, max] = getMinMax(Object.values(flow.numValues));
+        }
         let abs = Math.max(Math.abs(min), Math.abs(max));
         let minSize = 0.1;
         let arrow_dx = 10;
         for (let i = 0; i < n; ++i) {
             let time = i + flow.start;
-            if (flow.values[time]) {
-                let value = flow.numValues[time];
-                // let numValues = values.filter(x => typeof (x) !== 'string');
-                let x0 = dx * i;
-                let dy = Math.sign(value) * Math.max(minSize, Math.abs(value) / abs);
-                drawArrow(parent, x0, dy);
-                drawArrowTextNumber(text_number_parent, x0, dy, flow, time);
-                drawArrowTextText(text_text_parent, x0, dy, flow, time);
-                // let x0 = dx * time - 0.5 * arrow_dx * (numValues.length - 1);
-                // for (let j = 0; j < numValues.length; ++j) {
-                //     let value = numValues[j];
-                //     if (typeof(value) === 'number') {
-                //         let dy = Math.sign(value) * Math.max(minSize, Math.abs(value) / abs);
-                //         drawArrow(parent, x0 + j * arrow_dx, dy);
-                //     }
-                // }
+            let x0 = dx * i;
+            if (!flow.values[time])
+                continue;
+            // Filter numbers only
+            let v = Object.values(flow.values[time])
+                .filter(x => x.type === 'flowSimple')
+                .map(x => x.value.value);
+            // Do 2 arrows if sepFlows is true, else just 1 arrow.
+            let values = [];
+            if (flow.meta.sepFlows) {
+                values = [
+                    v.filter(x => x < 0),
+                    v.filter(x => x >= 0),
+                ];
+            }
+            else {
+                values = [v];
+            }
+            // let numValues = values.filter(x => typeof (x) !== 'string');
+            // Draw arrows (be 1 or 2)
+            for (const value of values) {
+                let v_reduce = value.reduce((p, c) => p + c, 0);
+                let dy = Math.sign(v_reduce) * Math.max(minSize, Math.abs(v_reduce) / abs);
+                var arrow = drawArrow(parent, x0, dy);
+                drawArrowTextNumber(arrow, x0, dy, value, flow);
+            }
+            let dy;
+            let text = Object.values(flow.values[time])
+                .filter(x => x.type === 'text')
+                .map(x => x.value);
+            // 1 arrow, either up or down.
+            let p = arrow || addSVGNode(parent, 'g', { x: x0, y: HEIGHT / 2 });
+            if (values.length === 1) {
+                let v_reduce = values[0].reduce((p, c) => p + c, 0);
+                dy = Math.sign(v_reduce) * Math.max(minSize, Math.abs(v_reduce) / abs);
+                drawArrowTextText(p, x0, dy, text, flow);
             }
         }
     }
-    function drawArrow(parent, x, size) {
-        if (size === 0)
+    function drawArrow(parent, x, size, size_init = 0) {
+        if (size === 0 || isNaN(size))
             return;
         let classList = ['arrow'];
         if (Math.sign(size) === -1)
@@ -66,50 +93,107 @@ export function render(SVG, size, flow) {
         let g = addSVGNode(parent, 'g', { class: classList.join(' ') });
         let y0 = HEIGHT / 2;
         let arrowSize = [10, 15];
-        addSVGNode(g, 'line', {
+        let l_attr = {
             x1: x,
             x2: x,
             y1: y0,
             y2: y0 * (1 - size),
-        });
+        };
+        addSVGNode(g, 'line', l_attr);
         addSVGNode(g, 'polyline', {
             points: polylinePoints([x - arrowSize[0], y0 * (1 - size) + Math.sign(size) * arrowSize[1]], [x, y0 * (1 - size)], [x + arrowSize[0], y0 * (1 - size) + Math.sign(size) * arrowSize[1]]),
         });
+        return g;
     }
-    function drawArrowTextNumber(text_number_parent, x, size, flow, time) {
-        let textMargin = [20, 10];
+    function drawArrowTextNumber(parent, x, dy, data, flow) {
+        let nround = (n) => round(n, flow.meta.roundDigits);
+        const result = nround(data.reduce((p, c) => p + c, 0));
+        if (!result)
+            return;
+        let a_def = {
+            'text-anchor': 'start',
+            x,
+            y: (1 - dy) * (HEIGHT / 2),
+            class: 'arrows-number',
+        };
+        if (data.length > 1) {
+            //let text_anchor = (Math.sign(result) > 0) ? 'start' : 'end';
+            let nsum = data
+                .map(x => nround(x))
+                .join('+')
+                .replace(/\+\-/g, '-');
+            let t_container = addSVGNode(parent, 'text', a_def);
+            addSVGNode(t_container, 'tspan', { x }, nround(result));
+            addSVGNode(t_container, 'tspan', {
+                x,
+                class: 'text-small',
+                dy: '1.2em',
+            }, `(${nsum})`);
+        }
+        else {
+            addSVGNode(parent, 'text', a_def, result);
+        }
+    }
+    function drawArrowTextNumberOld(text_number_parent, x, size, deltaSize, flow, time) {
+        //let textMargin = [20, 10];
         let data = flow.values[time];
         let numbers = data.filter(x => x.type === 'flowSimple');
         let result = flow.numValues[time];
         if (!result)
             return;
-        let xn = x + textMargin[0];
-        let yn = (HEIGHT / 2) * (1 - size) + textMargin[1];
+        let nround = (n) => round(n, flow.meta.roundDigits);
+        let xn = x; // + textMargin[0];
+        let yn = (HEIGHT / 2) * (1 - size); // + textMargin[1];
+        let a_def = {
+            'text-anchor': 'start',
+            x: xn,
+            y: yn,
+            class: 'arrows-text-number',
+        };
         if (numbers.length > 1) {
             let text_anchor = (Math.sign(result) > 0) ? 'start' : 'end';
-            addSVGNode(text_number_parent, 'text', {
-                'text-anchor': text_anchor,
-                transform: `translate(${xn},${yn}) rotate(90)`,
-                class: 'text-small',
-            }, `(${numbers
-                .map(x => x.value.value)
+            let nsum = numbers
+                .map(x => nround(x.value.value))
                 .join('+')
-                .replace(/\+\-/g, '-')})`);
-            addSVGNode(text_number_parent, 'text', {
-                'text-anchor': text_anchor,
-                transform: `translate(${xn + textMargin[0]},${yn}) rotate(90)`,
-            }, result);
+                .replace(/\+\-/g, '-');
+            let x = addSVGNode(text_number_parent, 'text', a_def);
+            addSVGNode(x, 'tspan', {
+                x: xn,
+            }, nround(result));
+            addSVGNode(x, 'tspan', {
+                class: 'text-small',
+                x: xn,
+                dy: '1.2em',
+            }, `(${nsum})`);
         }
         else {
-            let msg = numbers[0].value.value.toString();
-            addSVGNode(text_number_parent, 'text', {
-                x: xn,
-                y: yn,
-                'text-anchor': 'start',
-            }, msg);
+            let msg = nround(numbers[0].value.value);
+            addSVGNode(text_number_parent, 'text', a_def, msg);
         }
     }
-    function drawArrowTextText(text_text_parent, x, size, flow, time) {
+    function drawArrowTextText(parent, x, dy, text, flow) {
+        if (text.length) {
+            let margin = 1;
+            let xn = x;
+            let yn = (HEIGHT / 2) * (1 - dy);
+            let t = addSVGNode(parent, 'text', {
+                x: xn,
+                y: yn,
+                'text-anchor': 'middle',
+                class: 'arrows-text',
+            });
+            let line = 0;
+            for (let msg of text) {
+                addSVGNode(t, 'tspan', {
+                    x: xn,
+                    dy: '1em',
+                }, msg);
+                line++;
+            }
+            return t;
+        }
+    }
+    function drawArrowTextTextOld(text_text_parent, x, size, deltaSize, flow, time) {
         let textMargin = [20, 20];
         let data = flow.values[time];
         let text = data.filter(x => x.type === 'text');
@@ -157,13 +241,12 @@ export function render(SVG, size, flow) {
         timeTicks: addSVGNode(SVG, 'g', { class: 'baseline' }),
         timestamps: addSVGNode(SVG, 'g', { class: 'timestamps' }),
         arrows: addSVGNode(SVG, 'g', { class: 'arrows' }),
-        arrowsTextNumber: addSVGNode(SVG, 'g', { class: 'arrows-text-number' }),
         arrowsTextText: addSVGNode(SVG, 'g', { class: 'arrows-text-text' }),
         title: addSVGNode(SVG, 'g', { class: 'text-title' }),
     };
     drawDivisions(flow, renderGroup.timeTicks);
     drawTimestamps(flow, renderGroup.timestamps);
-    drawArrows(flow, renderGroup.arrows, renderGroup.arrowsTextText, renderGroup.arrowsTextNumber);
+    drawArrows(flow, renderGroup.arrows, renderGroup.arrowsTextText);
     drawMeta(flow, renderGroup.title);
 }
 //# sourceMappingURL=render.js.map

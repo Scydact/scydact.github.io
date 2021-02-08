@@ -41,6 +41,7 @@ export function getMinMax(arr) {
     return [min, max];
 }
 export const fixFloatError = (val) => Number.parseFloat(val.toPrecision(15));
+export const round = (num, digits = 0) => Number.parseFloat(num.toFixed(digits));
 export class ClassWatcher {
     constructor(targetNode, classToWatch, classAddedCallback, classRemovedCallback) {
         this.mutationCallback = mutationsList => {

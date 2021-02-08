@@ -43,7 +43,7 @@ export function getMinMax(arr: number[]) {
 }
 
 export const fixFloatError = (val: number) => Number.parseFloat(val.toPrecision(15));
-
+export const round = (num: number, digits=0) => Number.parseFloat(num.toFixed(digits));
 export class ClassWatcher {
     targetNode: HTMLElement;
     classToWatch: string;

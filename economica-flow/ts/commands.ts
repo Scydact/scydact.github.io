@@ -1,4 +1,4 @@
-import { i_ParserState, choice, number, remainder, sepBy1, sequenceOf, str, whitespace, optional, simpleInt, Parser } from "./StrParse.js";
+import { i_ParserState, choice, number, remainder, sepBy1, sequenceOf, str, whitespace, optional, simpleInt, Parser, letters } from "./StrParse.js";
 import { fixFloatError, setWin } from "./Utils.js";
 
 //#region Parser
@@ -49,6 +49,26 @@ const dt = {
             }
         }),
     },
+    boolean: {
+        p: choice([
+            simpleInt,
+            letters
+        ]).map((x) => {
+            let o = {
+                type: 'boolean',
+                value: false,
+                raw: x,
+            };
+            let y = x.toLowerCase();
+            if (['true', 't', 'v', '1'].includes(y)) o.value = true;
+            else if (['false', 'f', '0'].includes(y)) o.value = false;
+            else {
+                let n = parseFloat(x);
+                if (!isNaN(n)) o.value = !!n;
+            }
+            return o;
+        })
+    }
 }
 
 
@@ -59,9 +79,7 @@ export type i_command = {
     ignore?: boolean,
     [key: string]: any,
 };
-interface i_cmd_parser_result extends i_ParserState {
-    result: i_command[];
-}
+interface i_cmd_parser_result extends i_ParserState { result: i_command[]; }
 interface i_cmd_parser_final extends Parser { run: (str) => i_cmd_parser_result }
 const sepBySpaceParser = sepBy1(whitespace);
 const s = (x) => str(x, false);
@@ -73,7 +91,11 @@ export const commands: {
     }
 } = {
     comment: {
-        desc: ['% TEXT', 'Line is just ignored'],
+        desc: [
+            'data',
+            '% TEXT',
+            'Line is just ignored'
+        ],
         p: sequenceOf([s('%'), remainder])
             .map(x => ({
                 cmd: 'comment',
@@ -84,7 +106,11 @@ export const commands: {
     },
 
     heading: {
-        desc: ['h TEXT', 'Sets the plot\'s title.'],
+        desc: [
+            'meta',
+            'h TEXT',
+            'Sets the plot\'s title.'
+        ],
         p: sequenceOf([s('h '), remainder])
             .map(x => ({
                 cmd: 'heading',
@@ -96,8 +122,83 @@ export const commands: {
         },
     },
 
+    roundDigits: {
+        desc: [
+            'meta',
+            'round n',
+            'Rounds all number to n amount of digits.'
+        ],
+        p: sequenceOf([s('round '), simpleInt])
+            .map(x => ({
+                cmd: 'roundDigits',
+                value: x[1],
+            })),
+        a: (state, cmd) => {
+            state.meta.roundDigits = parseInt(cmd.value);
+            return state;
+        },
+    },
+
+    overlapBehaviour: {
+        desc: [
+            'meta',
+            'overlap TEXT',
+            'Changes the default behaviour of overlapping flows. ' +
+            'Can be SUM or STACK'
+        ],
+        p: sequenceOf([s('overlap '), letters])
+            .map(x => ({
+                cmd: 'overlapBehaviour',
+                value: x[1],
+            })),
+        a: (state, cmd) => {
+            const a = cmd.value.toLowerCase();
+            const b = ['sum', 'stack'];
+            if (b.includes(a)) state.meta.overlapBehaviour = a;
+            return state;
+        },
+    },
+
+    flowSeparation: {
+        desc: [
+            'meta',
+            'sepflow BOOL',
+            'If true, negative and positive flows will be treated as separate.'
+        ],
+        p: sequenceOf([s('sepflow '), dt.boolean.p])
+            .map(x => ({
+                cmd: 'flowSeparation',
+                value: x[1],
+            })),
+        a: (state, cmd) => {
+            state.meta.sepFlows = cmd.value.value;
+            return state;
+        },
+    },
+
+    numberRotate: {
+        desc: [
+            'meta',
+            'numrot BOOL',
+            'If true, flow values will be rotated 90°.'
+        ],
+        p: sequenceOf([s('numrot '), dt.boolean.p])
+            .map(x => ({
+                cmd: 'numberRotate',
+                value: x[1],
+            })),
+        a: (state, cmd) => {
+            state.meta.numberRotated = cmd.value.value;
+            return state;
+        },
+    },
+
     message: {
-        desc: ['m TEXT', 'Sets a message on this line.'],
+        desc: [
+            'data',
+            'm TEXT',
+            'Sets a message on this line.'
+        ],
         p: sequenceOf([s('m '), remainder])
             .map(x => ({
                 cmd: 'message',
@@ -113,7 +214,11 @@ export const commands: {
     },
 
     messagePrevious: {
-        desc: ['mp TEXT', 'Sets a message on the previous period.'],
+        desc: [
+            'data',
+            'mp TEXT',
+            'Sets a message on the previous period.'
+        ],
         p: sequenceOf([s('mp '), remainder])
             .map(x => ({
                 cmd: 'messagePrevious',
@@ -132,7 +237,11 @@ export const commands: {
     },
 
     timeJump: {
-        desc: ['t P', 'Jumps to a given period.'],
+        desc: [
+            'data',
+            't P',
+            'Jumps to a given period.'
+        ],
         p: sequenceOf([s('t '), dt.numberTime.p])
             .map(x => ({
                 cmd: 'timeJump',
@@ -150,7 +259,11 @@ export const commands: {
     },
 
     simpleFlow: {
-        desc: ['X', 'Adds an arrow at this time'],
+        desc: [
+            'data',
+            'X',
+            'Adds an arrow at this time'
+        ],
         p: dt.numberFlow.p
             .map(x => ({
                 cmd: 'simpleFlow',
@@ -168,7 +281,11 @@ export const commands: {
     },
 
     annuality: {
-        desc: ['a n X', 'Adds n payments of X'],
+        desc: [
+            'data',
+            'a n X',
+            'Adds n payments of X'
+        ],
         p: sequenceOf([s('a '), simpleInt, whitespace, dt.numberFlow.p])
             .map(x => ({
                 cmd: 'annuality',
@@ -191,7 +308,11 @@ export const commands: {
     },
 
     arithmeticSequence: {
-        desc: ['sa n G', 'Adds an arithmetic sequence (sa) of n values in increments of G'],
+        desc: [
+            'data',
+            'sa n G',
+            'Adds an arithmetic sequence (sa) of n values in increments of G'
+        ],
         p: sequenceOf([s('sa '), simpleInt, whitespace, dt.numberFlow.p])
             .map(x => ({
                 cmd: 'arithmeticSequence',
@@ -216,7 +337,11 @@ export const commands: {
     },
 
     geometricSequence: {
-        desc: ['sg n A1 g', 'Adds an geometric sequence (sg) of n values, with initial value A1, at increments of g.'],
+        desc: [
+            'data',
+            'sg n A1 g',
+            'Adds an geometric sequence (sg) of n values, with initial value A1, at increments of g.'
+        ],
         p: sequenceOf([
             s('sg '),
             simpleInt, whitespace,
@@ -252,28 +377,37 @@ export const lineParser = sepBySpaceParser(command) as i_cmd_parser_final;
 //#endregion
 
 //#region Flow and line processing
-export function createFlow(str) {
-    const str_lines = str
+export function createFlow(data: string, meta: string) {
+    const dataLinesRaw = data
+        .split('\n')
+        .map(x => x.trim());
+    const metaLinesRaw = meta
         .split('\n')
         .map(x => x.trim());
 
-    const lines = str_lines.map(x => lineParser.run(x));
-    return processLines(lines);
+    const dataLines = dataLinesRaw.map(x => lineParser.run(x));
+    const metaLines = metaLinesRaw.map(x => lineParser.run(x));
+    return processLines([...metaLines, ...dataLines]);
 }
 
 interface i_lineState {
     pushVal: (Function),
     values: {
-        [key: number]: any,
+        [key: number]: any[],
     },
     t: number,
     hop_t: boolean,
     meta: {
         title: string,
         interest: number,
+        roundDigits: number,
+        overlapBehaviour: 'sum' | 'stack',
+        sepFlows: boolean,
+        numberRotated: boolean,
     }
 }
 
+export type i_flow = ReturnType<typeof processLines>;
 function processLines(lines: i_cmd_parser_result[]) {
     let state: i_lineState = {
         pushVal: function (x: any) {
@@ -287,6 +421,10 @@ function processLines(lines: i_cmd_parser_result[]) {
         meta: {
             title: '',
             interest: 0.05,
+            roundDigits: 2,
+            overlapBehaviour: 'stack',
+            sepFlows: false,
+            numberRotated: true,
         },
     }
 
@@ -314,18 +452,33 @@ function processLines(lines: i_cmd_parser_result[]) {
     // }
     // and add some respective period-to-svg-x function.
 
-    let numValues = {}
+    let numValues = {} as { [key: number]: number };
     for (let key in state.values) {
         numValues[key] = fixFloatError(
             state.values[key]
                 .filter(x => x.type === 'flowSimple')
                 .reduce((p, c) => p + c.value.value, 0));
     }
+    let numBiValues = {} as { [key: number]: [number, number] };
+    for (let key in state.values) {
+        numBiValues[key] =
+            state.values[key]
+                .filter(x => x.type === 'flowSimple')
+                .reduce((p, c) => {
+                    let a = c.value.value;
+                    if (a > 0)
+                        p[0] += a;
+                    else if (a < 0)
+                        p[1] += a;
+                    return p;
+                }, [0, 0]).map(x => fixFloatError(x));
+    }
 
     let x = {
-        keys: keys,
+        keys,
         values: state.values,
-        numValues: numValues,
+        numValues,
+        numBiValues,
         start: minVal,
         end: maxVal,
         meta: state.meta,
@@ -333,5 +486,4 @@ function processLines(lines: i_cmd_parser_result[]) {
     setWin({ parserLines: lines, flow: x })
     return x;
 }
-
 //#endregion

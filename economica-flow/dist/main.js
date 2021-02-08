@@ -15,6 +15,7 @@ let NODES = {
     svg: document.createElementNS(SVG_DOCSTRING, 'svg'),
     svg_sub: createSVGNode('g', { class: 'container' }),
     ta_in: document.createElement('textarea'),
+    ta_meta: document.createElement('textarea'),
     ta_style: null,
     buffer: document.createElement('div'),
 };
@@ -158,6 +159,9 @@ setWin({ OTHER, DOWNLOADS });
 const COOKIE_NAME = 'economica-flow-v0';
 const DEFAULT_VALUES = {
     style: '',
+    meta: `
+
+    `.trim().split('\n').map(x => x.trim()).join('\n'),
     data: `
     h Flujo
 
@@ -174,7 +178,7 @@ const DEFAULT_VALUES = {
 
     t 7
     m Trimestre
-    mp sin pagar
+    m sin pagar
     `.trim().split('\n').map(x => x.trim()).join('\n'),
     size: HEIGHT * 3,
     transparency: false,
@@ -186,6 +190,7 @@ function loadCookies() {
         let x = localStorage.getItem(COOKIE_NAME);
         SAVED_VALUES = Object.assign(Object.assign({}, DEFAULT_VALUES), JSON.parse(x));
         NODES.ta_in.value = SAVED_VALUES.data;
+        NODES.ta_meta.value = SAVED_VALUES.meta;
         SETTINGS_NODES.size.value = SAVED_VALUES.size;
         SETTINGS_NODES.transparency.checked = SAVED_VALUES.transparency;
         setCss(SAVED_VALUES.style);
@@ -195,6 +200,7 @@ function saveCookies() {
     SAVED_VALUES = {
         style: getCss(),
         data: NODES.ta_in.value,
+        meta: NODES.ta_meta.value,
         size: parseInt(SETTINGS_NODES.size.value),
         transparency: SETTINGS_NODES.transparency.checked,
     };
@@ -206,19 +212,43 @@ function removeCookies() {
 }
 //#endregion
 //#region ONLOAD RUN
-function doRender(data) {
-    if (!data)
-        data = NODES.ta_in.value;
-    let flow = createFlow(data);
+function doRender() {
+    let data = NODES.ta_in.value;
+    let meta = NODES.ta_meta.value;
+    let flow = createFlow(data, meta);
     render(NODES.svg_sub, [WIDTH, HEIGHT], flow);
+    //svgDebug();
 }
+const svgDebug = function () {
+    const svg = NODES.svg;
+    const texts = svg.getElementsByClassName('arrows-text-number');
+    for (const txt of [...texts]) {
+        const bbox = txt.getBBox();
+        const a = {
+            x: bbox.x,
+            y: bbox.y,
+            width: bbox.width,
+            height: bbox.height,
+            fill: 'red',
+        };
+        txt.parentNode.insertBefore(createSVGNode('rect', a), txt);
+    }
+};
+setWin({ svgDebug });
 function populateCmdTable() {
-    let cmds = Object.values(commands).map(x => x.desc);
+    let cmds = Object.values(commands)
+        .map(x => x.desc);
     let oTable = document.getElementById('commands-table');
-    for (const cmd of cmds) {
+    for (const cmd of cmds.filter(x => x[0] === 'data')) {
         let r = oTable.insertRow();
-        r.insertCell().innerText = cmd[0];
         r.insertCell().innerText = cmd[1];
+        r.insertCell().innerText = cmd[2];
+    }
+    oTable = document.getElementById('meta-commands-table');
+    for (const cmd of cmds.filter(x => x[0] === 'meta')) {
+        let r = oTable.insertRow();
+        r.insertCell().innerText = cmd[1];
+        r.insertCell().innerText = cmd[2];
     }
 }
 window.addEventListener('load', () => __awaiter(void 0, void 0, void 0, function* () {
@@ -228,7 +258,10 @@ window.addEventListener('load', () => __awaiter(void 0, void 0, void 0, function
     // Code
     NODES.ta_in.id = 'txtinput';
     document.getElementById('container_in').appendChild(NODES.ta_in);
-    NODES.ta_in.addEventListener('input', (x) => doRender(x.target.value));
+    NODES.ta_in.addEventListener('input', doRender);
+    NODES.ta_meta.id = 'txtinputmeta';
+    document.getElementById('container_meta').appendChild(NODES.ta_meta);
+    NODES.ta_meta.addEventListener('input', doRender);
     // Styles
     let a = document.createElement('textarea');
     a.id = 'styleinput';
@@ -237,6 +270,7 @@ window.addEventListener('load', () => __awaiter(void 0, void 0, void 0, function
     var editor = CodeMirror.fromTextArea(a, {
         lineNumbers: true,
         mode: 'css',
+        tabSize: 4,
     });
     editor.on('change', appendCss);
     editor.setSize(null, 500);
