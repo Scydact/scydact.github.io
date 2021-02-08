@@ -14,7 +14,20 @@ textarea {
     text-align: center;
 }
 #commands table {
-    border-spacing: 1em 0;
+    border-spacing: 0;
+    width: 100%;
+}
+#commands table tr:nth-child(even) td {
+    background-color: rgba(0,0,0,5%);
+}
+#commands table td:first-child {
+    min-width: 80px;
+    color: rgb(54, 42, 122);
+    font-weight: bold;
+}
+#commands table td:last-child {
+    width: auto;
+    padding-left: .5em;
 }
 .options {
     margin: 1em 0;

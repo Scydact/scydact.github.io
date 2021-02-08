@@ -107,7 +107,6 @@ export function render(SVG, size, flow) {
         let textMargin = [20, 10];
 
         let data = flow.values[time];
-        console.log(data);
         let numbers = data.filter(x => x.type === 'flowSimple');
         let result = flow.numValues[time];
         if (!result) return;

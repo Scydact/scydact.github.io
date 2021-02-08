@@ -79,7 +79,6 @@ export function render(SVG, size, flow) {
     function drawArrowTextNumber(text_number_parent, x, size, flow, time) {
         let textMargin = [20, 10];
         let data = flow.values[time];
-        console.log(data);
         let numbers = data.filter(x => x.type === 'flowSimple');
         let result = flow.numValues[time];
         if (!result)

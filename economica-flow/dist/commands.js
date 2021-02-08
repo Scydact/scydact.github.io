@@ -13,12 +13,13 @@ const dt = {
     numberFlow: {
         p: sequenceOf([
             number,
-            optional(choiceStr('cKM', false))
+            optional(choiceStr('cKM%', false))
         ]).map((x) => {
             const [n, suffix] = x;
             const raw = n + (suffix || '');
             const mult_dict = {
                 c: 1e-2,
+                '%': 1e-2,
                 k: 1e3,
                 m: 1e6,
             };
@@ -26,6 +27,7 @@ const dt = {
             return {
                 type: 'flow',
                 value: fixFloatError(parseFloat(n) * mult),
+                suffix,
                 raw,
             };
         }),
@@ -38,7 +40,7 @@ const dt = {
             const [prefix, n] = x;
             const raw = (prefix || '') + n;
             return {
-                type: 'flow',
+                type: 'timeDisplacement',
                 value: parseInt(n),
                 jumpType: (prefix === 'r') ? 'relative' : 'absolute',
                 raw,
@@ -47,10 +49,11 @@ const dt = {
     },
 };
 const sepBySpaceParser = sepBy1(whitespace);
+const s = (x) => str(x, false);
 export const commands = {
     comment: {
         desc: ['% TEXT', 'Line is just ignored'],
-        p: sequenceOf([str('%'), remainder])
+        p: sequenceOf([s('%'), remainder])
             .map(x => ({
             cmd: 'comment',
             value: x[1],
@@ -60,7 +63,7 @@ export const commands = {
     },
     heading: {
         desc: ['h TEXT', 'Sets the plot\'s title.'],
-        p: sequenceOf([str('h '), remainder])
+        p: sequenceOf([s('h '), remainder])
             .map(x => ({
             cmd: 'heading',
             value: x[1],
@@ -72,7 +75,7 @@ export const commands = {
     },
     message: {
         desc: ['m TEXT', 'Sets a message on this line.'],
-        p: sequenceOf([str('m '), remainder])
+        p: sequenceOf([s('m '), remainder])
             .map(x => ({
             cmd: 'message',
             value: x[1],
@@ -87,9 +90,9 @@ export const commands = {
     },
     messagePrevious: {
         desc: ['mp TEXT', 'Sets a message on the previous period.'],
-        p: sequenceOf([str('mp '), remainder])
+        p: sequenceOf([s('mp '), remainder])
             .map(x => ({
-            cmd: 'message',
+            cmd: 'messagePrevious',
             value: x[1],
         })),
         a: (state, cmd) => {
@@ -104,7 +107,7 @@ export const commands = {
     },
     timeJump: {
         desc: ['t P', 'Jumps to a given period.'],
-        p: sequenceOf([str('t '), dt.numberTime.p])
+        p: sequenceOf([s('t '), dt.numberTime.p])
             .map(x => ({
             cmd: 'timeJump',
             value: x[1].value,
@@ -130,6 +133,78 @@ export const commands = {
                 type: 'flowSimple',
                 value: cmd.value,
             });
+            state.hop_t = true;
+            return state;
+        },
+    },
+    annuality: {
+        desc: ['a n X', 'Adds n payments of X'],
+        p: sequenceOf([s('a '), simpleInt, whitespace, dt.numberFlow.p])
+            .map(x => ({
+            cmd: 'annuality',
+            value: [x[1], x[3]],
+        })),
+        a: (state, cmd) => {
+            let imax = parseFloat(cmd.value[0]);
+            for (let i = 0; i < imax; i++) {
+                state.pushVal({
+                    type: 'flowSimple',
+                    value: cmd.value[1],
+                });
+                state.t++;
+            }
+            state.t--;
+            state.hop_t = true;
+            return state;
+        },
+    },
+    arithmeticSequence: {
+        desc: ['sa n G', 'Adds an arithmetic sequence (sa) of n values in increments of G'],
+        p: sequenceOf([s('sa '), simpleInt, whitespace, dt.numberFlow.p])
+            .map(x => ({
+            cmd: 'arithmeticSequence',
+            value: [x[1], x[3]],
+        })),
+        a: (state, cmd) => {
+            let imax = parseFloat(cmd.value[0]);
+            let ogVal = cmd.value[1];
+            for (let i = 0; i < imax; i++) {
+                let modVal = Object.assign(Object.assign({}, ogVal), { value: fixFloatError(i * ogVal.value) });
+                state.pushVal({
+                    type: 'flowSimple',
+                    value: modVal,
+                });
+                state.t++;
+            }
+            state.t--;
+            state.hop_t = true;
+            return state;
+        },
+    },
+    geometricSequence: {
+        desc: ['sg n A1 g', 'Adds an geometric sequence (sg) of n values, with initial value A1, at increments of g.'],
+        p: sequenceOf([
+            s('sg '),
+            simpleInt, whitespace,
+            dt.numberFlow.p, whitespace,
+            dt.numberFlow.p
+        ]).map(x => ({
+            cmd: 'geometricSequence',
+            value: [x[1], x[3], x[5]],
+        })),
+        a: (state, cmd) => {
+            let imax = parseFloat(cmd.value[0]);
+            let ogVal = cmd.value[1];
+            let increment = cmd.value[2].value;
+            for (let i = 0; i < imax; i++) {
+                let modVal = Object.assign(Object.assign({}, ogVal), { value: fixFloatError(Math.pow((1 + increment), i) * ogVal.value) });
+                state.pushVal({
+                    type: 'flowSimple',
+                    value: modVal,
+                });
+                state.t++;
+            }
+            state.t--;
             state.hop_t = true;
             return state;
         },
@@ -199,7 +274,7 @@ function processLines(lines) {
         end: maxVal,
         meta: state.meta,
     };
-    setWin({ x });
+    setWin({ parserLines: lines, flow: x });
     return x;
 }
 //#endregion

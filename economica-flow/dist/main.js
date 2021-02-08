@@ -7,7 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { createFlow, lineParser } from "./commands.js";
+import { commands, createFlow, lineParser } from "./commands.js";
 import { ClassWatcher, clearNode, createSVGNode, setWin, SVG_DOCSTRING } from "./Utils.js";
 import { render } from "./render.js";
 setWin({ p: lineParser });
@@ -152,6 +152,7 @@ const OTHER = {
         x.onbeforeunload = () => URL.revokeObjectURL(blobUrl);
     }),
 };
+setWin({ OTHER, DOWNLOADS });
 //#endregion
 //#region COOKIES
 const COOKIE_NAME = 'economica-flow-v0';
@@ -211,8 +212,18 @@ function doRender(data) {
     let flow = createFlow(data);
     render(NODES.svg_sub, [WIDTH, HEIGHT], flow);
 }
+function populateCmdTable() {
+    let cmds = Object.values(commands).map(x => x.desc);
+    let oTable = document.getElementById('commands-table');
+    for (const cmd of cmds) {
+        let r = oTable.insertRow();
+        r.insertCell().innerText = cmd[0];
+        r.insertCell().innerText = cmd[1];
+    }
+}
 window.addEventListener('load', () => __awaiter(void 0, void 0, void 0, function* () {
     DEFAULT_VALUES.style = yield getDefaultCss();
+    populateCmdTable();
     setWin({ DEFAULT_VALUES, doRender });
     // Code
     NODES.ta_in.id = 'txtinput';

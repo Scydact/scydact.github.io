@@ -1,6 +1,7 @@
-import { createFlow, lineParser } from "./commands.js";
+import { commands, createFlow, lineParser } from "./commands.js";
 import { ClassWatcher, clearNode, createSVGNode, setWin, SVG_DOCSTRING } from "./Utils.js";
 import { render } from "./render.js";
+import { optional } from "./StrParse.js";
 setWin({ p: lineParser });
 
 let NODES = {
@@ -155,6 +156,7 @@ const OTHER = {
         x.onbeforeunload = () => URL.revokeObjectURL(blobUrl);
     },
 }
+setWin({ OTHER, DOWNLOADS });
 //#endregion
 
 //#region COOKIES
@@ -215,11 +217,22 @@ function doRender(data?) {
     render(NODES.svg_sub, [WIDTH, HEIGHT], flow);
 }
 
+function populateCmdTable() {
+    let cmds = Object.values(commands).map(x => x.desc);
+    let oTable = document.getElementById('commands-table') as HTMLTableElement;
+    for (const cmd of cmds) {
+        let r = oTable.insertRow();
+        r.insertCell().innerText = cmd[0];
+        r.insertCell().innerText = cmd[1];
+    }
+}
+
 // First render
 declare const CodeMirror: any;
 window.addEventListener('load', async () => {
 
     DEFAULT_VALUES.style = await getDefaultCss();
+    populateCmdTable();
     setWin({ DEFAULT_VALUES, doRender });
 
     // Code
