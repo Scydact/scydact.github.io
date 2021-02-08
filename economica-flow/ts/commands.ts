@@ -1,82 +1,7 @@
-import { between, choice, many, many1, number, regex, remainder, sepBy1, sequenceOf, str, whitespace, optional, simpleInt, Parser } from "./StrParse.js";
-const fixFloatError = (val: number) => Number.parseFloat(val.toPrecision(15));
+import { i_ParserState, choice, number, remainder, sepBy1, sequenceOf, str, whitespace, optional, simpleInt, Parser } from "./StrParse.js";
+import { fixFloatError, setWin } from "./Utils.js";
 
-function processInput(str) {
-    let lines = str.trim().split('\n').map(x => x.trim().split(' '));
-
-    // first pass - register all commands
-    let values = {};
-    let current_t = 0;
-    let others = {
-        title: '',
-    }
-    function pushVal(x) {
-        if (values[current_t] === undefined) values[current_t] = [];
-        values[current_t].push(x);
-    }
-
-    for (let line of lines) {
-        if (!line.length || !line[0].length || line[0][0] === '%') continue;
-        let modLine = null;
-        let nextLn = line;
-        do {
-            modLine = nextLn;
-            let s = modLine[0].toLowerCase();
-            nextLn = modLine.slice(1);
-            // case: number:
-            if (!isNaN(s)) {
-                pushVal(parseFloat(s));
-                if (!nextLn.length) ++current_t;
-            }
-            else if (s === 't') {
-                current_t = (line[1] || 0) - 1; //line[1] is string...
-                nextLn = modLine.slice(2);
-                if (!nextLn.length) ++current_t;
-            }
-            else if (s === 'tr') {
-                current_t += (line[1] || 0) - 1; //line[1] is string...
-                nextLn = modLine.slice(2);
-                if (!nextLn.length) ++current_t;
-            }
-            else if (s === 'm') {
-                pushVal(nextLn.join(' ').toString());
-                ++current_t;
-                break;
-            } else if (s === 'ma') {
-                --current_t;
-                pushVal(nextLn.join(' ').toString());
-                ++current_t;
-                break;
-            }
-            else if (s === 'h') {
-                others.title = nextLn.join(' ').toString();
-                break;
-            }
-
-        } while (nextLn.length)
-    }
-
-
-    // set as an array
-    let keys = Object.keys(values).map(x => parseInt(x)).sort((a, b) => a - b);
-    let minVal = keys[0];
-    let maxVal = keys[keys.length - 1];
-    let numValues = {}
-    for (let key in values)
-        numValues[key] = values[key].filter(x => typeof (x) === 'number').reduce((p, c) => p + c, 0)
-
-    let w = window as any;
-    w.x = {
-        keys: keys,
-        values: values,
-        numValues: numValues,
-        start: minVal,
-        end: maxVal,
-        meta: others,
-    };
-    return w.x;
-}
-
+//#region Parser
 const choiceStr = (chars, caseSensitive?) => {
     let choices = [];
     for (let c of chars)
@@ -124,15 +49,35 @@ const dt = {
     },
 }
 
+
+
+export type i_command = {
+    cmd: string,
+    value: any,
+    ignore?: boolean,
+    [key: string]: any,
+};
+interface i_cmd_parser_result extends i_ParserState {
+    result: i_command[];
+}
+interface i_cmd_parser_final extends Parser { run: (str) => i_cmd_parser_result }
 const sepBySpaceParser = sepBy1(whitespace);
-const commands = {
+export const commands: {
+    [key: string]: {
+        desc: string[],
+        p: Parser,
+        a: (state: i_lineState, cmd?: i_command) => i_lineState,
+    }
+} = {
     comment: {
         desc: ['% TEXT', 'Line is just ignored'],
         p: sequenceOf([str('%'), remainder])
             .map(x => ({
                 cmd: 'comment',
                 value: x[1],
+                ignore: true,
             })),
+        a: (state) => { return state; },
     },
 
     heading: {
@@ -142,6 +87,10 @@ const commands = {
                 cmd: 'heading',
                 value: x[1],
             })),
+        a: (state, cmd) => {
+            state.meta.title = cmd.value;
+            return state;
+        },
     },
 
     message: {
@@ -151,6 +100,13 @@ const commands = {
                 cmd: 'message',
                 value: x[1],
             })),
+        a: (state, cmd) => {
+            state.pushVal({
+                type: 'text',
+                value: cmd.value,
+            });
+            return state;
+        },
     },
 
     messagePrevious: {
@@ -160,6 +116,16 @@ const commands = {
                 cmd: 'message',
                 value: x[1],
             })),
+
+        a: (state, cmd) => {
+            state.t--;
+            state.pushVal({
+                type: 'text',
+                value: cmd.value,
+            });
+            state.t++;
+            return state;
+        },
     },
 
     timeJump: {
@@ -170,6 +136,14 @@ const commands = {
                 value: x[1].value,
                 type: x[1].jumpType,
             })),
+
+        a: (state, cmd) => {
+            if (cmd.type === 'absolute')
+                state.t = cmd.value;
+            else
+                state.t += cmd.value;
+            return state;
+        }
     },
 
     simpleFlow: {
@@ -179,8 +153,103 @@ const commands = {
                 cmd: 'simpleFlow',
                 value: x,
             })),
+
+        a: (state, cmd) => {
+            state.pushVal({
+                type: 'flowSimple',
+                value: cmd.value,
+            });
+            state.hop_t = true;
+            return state;
+        },
     },
 }
 
-const command = choice(Object.values(commands).map(x => x.p));
-export const lineParser = sepBySpaceParser(command);
+const command = choice(Object.values(commands).map(x => x.p))
+export const lineParser = sepBySpaceParser(command) as i_cmd_parser_final;
+
+//#endregion
+
+//#region Flow and line processing
+export function createFlow(str) {
+    const str_lines = str
+        .split('\n')
+        .map(x => x.trim());
+
+    const lines = str_lines.map(x => lineParser.run(x));
+    return processLines(lines);
+}
+
+interface i_lineState {
+    pushVal: (Function),
+    values: {
+        [key: number]: any,
+    },
+    t: number,
+    hop_t: boolean,
+    meta: {
+        title: string,
+        interest: number,
+    }
+}
+
+function processLines(lines: i_cmd_parser_result[]) {
+    let state: i_lineState = {
+        pushVal: function (x: any) {
+            if (this.values[this.t] === undefined)
+                this.values[this.t] = [];
+            this.values[this.t].push(x);
+        },
+        values: {},
+        t: 0,
+        hop_t: false,
+        meta: {
+            title: '',
+            interest: 0.05,
+        },
+    }
+
+    // Recompile commands
+    for (const l of lines) {
+        let line_cmd = (l.result || []).filter(x => !x.ignore);
+        if (!line_cmd.length) continue;
+        for (const cmd of line_cmd) {
+            let a = commands[cmd.cmd];
+            if (a) state = a.a(state, cmd);
+        }
+        if (state.hop_t) state.t++;
+        state.hop_t = false;
+    }
+
+    // Join arrows and stuff...
+    const keys = Object.keys(state.values).map(x => parseInt(x)).sort((a, b) => a - b);
+    const minVal = keys[0];
+    const maxVal = keys[keys.length - 1];
+
+    // TODO: Set a period system, like: 
+    // periods: {
+    //     {start: -1, end: 3},
+    //     {start: 5, end: 10},
+    // }
+    // and add some respective period-to-svg-x function.
+
+    let numValues = {}
+    for (let key in state.values) {
+        numValues[key] = state.values[key]
+            .filter(x => x.type === 'flowSimple')
+            .reduce((p, c) => p + c.value.value, 0);
+    }
+
+    let x = {
+        keys: keys,
+        values: state.values,
+        numValues: numValues,
+        start: minVal,
+        end: maxVal,
+        meta: state.meta,
+    };
+    setWin({ x })
+    return x;
+}
+
+//#endregion

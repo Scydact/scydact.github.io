@@ -1,92 +1,7 @@
-import { lineParser } from "./commands.js";
 import { addSVGNode, clearNode, getMinMax } from "./Utils.js";
 
 function polylinePoints(...arr: [number, number][]) {
     return arr.map(x => x.join(',')).join(' ');
-}
-
-export function createFlow(str) {
-    const str_lines = str
-        .split('\n')
-        .map(x => x.trim());
-
-    const lines = str_lines.map(x => lineParser.run(x));
-}
-
-export function processInputOld(str) {
-    let lines = str.trim().split('\n').map(x => x.trim().split(' '));
-
-    // first pass - register all commands
-    let values = {};
-    let current_t = 0;
-    let others = {
-        title: '',
-    }
-    function pushVal(x) {
-        if (values[current_t] === undefined) values[current_t] = [];
-        values[current_t].push(x);
-    }
-
-    for (let line of lines) {
-        if (!line.length || !line[0].length || line[0][0] === '%') continue;
-        let modLine = null;
-        let nextLn = line;
-        do {
-            modLine = nextLn;
-            let s = modLine[0].toLowerCase();
-            nextLn = modLine.slice(1);
-            // case: number:
-            if (!isNaN(s)) {
-                pushVal(parseFloat(s));
-                if (!nextLn.length) ++current_t;
-            }
-            else if (s === 't') {
-                current_t = (line[1] || 0) - 1; //line[1] is string...
-                nextLn = modLine.slice(2);
-                if (!nextLn.length) ++current_t;
-            }
-            else if (s === 'tr') {
-                current_t += (line[1] || 0) - 1; //line[1] is string...
-                nextLn = modLine.slice(2);
-                if (!nextLn.length) ++current_t;
-            }
-            else if (s === 'm') {
-                pushVal(nextLn.join(' ').toString());
-                ++current_t;
-                break;
-            } else if (s === 'ma') {
-                --current_t;
-                pushVal(nextLn.join(' ').toString());
-                ++current_t;
-                break;
-            }
-            else if (s === 'h') {
-                others.title = nextLn.join(' ').toString();
-                break;
-            }
-
-        } while (nextLn.length)
-    }
-
-
-    // set as an array
-    let keys = Object.keys(values).map(x => parseInt(x)).sort((a, b) => a - b);
-    let minVal = keys[0];
-    let maxVal = keys[keys.length - 1];
-    let numValues = {}
-    for (let key in values)
-        numValues[key] = values[key].filter(x => typeof (x) === 'number').reduce((p, c) => p + c, 0)
-
-    let w = window as any;
-    w.x = {
-        keys: keys,
-        values: values,
-        numValues: numValues,
-        start: minVal,
-        end: maxVal,
-        meta: others,
-    };
-    return w.x;
 }
 
 export function render(SVG, size, flow) {
@@ -192,7 +107,8 @@ export function render(SVG, size, flow) {
         let textMargin = [20, 10];
 
         let data = flow.values[time];
-        let numbers = data.filter(x => (typeof (x) === 'number'));
+        console.log(data);
+        let numbers = data.filter(x => x.type === 'flowSimple');
         let result = flow.numValues[time];
         if (!result) return;
 
@@ -207,7 +123,10 @@ export function render(SVG, size, flow) {
                 transform: `translate(${xn},${yn}) rotate(90)`,
                 class: 'text-small',
             },
-                `(${numbers.join('+').replaceAll('+-', '-')})`);
+                `(${numbers
+                    .map(x => x.value.value)
+                    .join('+')
+                    .replace(/\+\-/g, '-')})`);
 
             addSVGNode(text_number_parent, 'text', {
                 'text-anchor': text_anchor,
@@ -215,7 +134,7 @@ export function render(SVG, size, flow) {
             }, result);
 
         } else {
-            let msg = numbers[0].toString();
+            let msg = numbers[0].value.value.toString();
             addSVGNode(text_number_parent, 'text', {
                 x: xn,
                 y: yn,
@@ -228,7 +147,7 @@ export function render(SVG, size, flow) {
         let textMargin = [20, 20];
 
         let data = flow.values[time];
-        let text = data.filter(x => typeof (x) === 'string');
+        let text = data.filter(x => x.type === 'text');
         let direction = Math.sign(size) || 1;
 
         let calcYn = (direction === 1) ?
@@ -245,7 +164,7 @@ export function render(SVG, size, flow) {
                     x: xn,
                     y: yn,
                     'text-anchor': 'middle',
-                }, msg)
+                }, msg.value)
                 line++;
             }
         }

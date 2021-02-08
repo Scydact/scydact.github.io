@@ -7,9 +7,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { lineParser } from "./commands.js";
+import { createFlow, lineParser } from "./commands.js";
 import { ClassWatcher, clearNode, createSVGNode, setWin, SVG_DOCSTRING } from "./Utils.js";
-import { render, processInputOld } from "./render.js";
+import { render } from "./render.js";
 setWin({ p: lineParser });
 let NODES = {
     svg: document.createElementNS(SVG_DOCSTRING, 'svg'),
@@ -31,7 +31,6 @@ let [WIDTH, HEIGHT] = [700, 400];
 //#region EXPORT AS PNG + style config
 function getCss() {
     let style = NODES.ta_style.doc.getValue();
-    console.log(style);
     if (style.trim() !== '')
         return style;
     let defaultStyle = DEFAULT_VALUES.style;
@@ -46,7 +45,6 @@ function getDefaultCss() {
 }
 function setCss(str) {
     let a = NODES.ta_style;
-    console.log(a);
     if (a) {
         a.setValue(str);
         appendCss();
@@ -170,12 +168,12 @@ const DEFAULT_VALUES = {
     -800
 
     % Mover 3 sin pagar
-    tr 3
+    t r3
     1500
 
     t 7
     m Trimestre
-    ma sin pagar
+    mp sin pagar
     `.trim().split('\n').map(x => x.trim()).join('\n'),
     size: HEIGHT * 3,
     transparency: false,
@@ -210,7 +208,7 @@ function removeCookies() {
 function doRender(data) {
     if (!data)
         data = NODES.ta_in.value;
-    let flow = processInputOld(data);
+    let flow = createFlow(data);
     render(NODES.svg_sub, [WIDTH, HEIGHT], flow);
 }
 window.addEventListener('load', () => __awaiter(void 0, void 0, void 0, function* () {

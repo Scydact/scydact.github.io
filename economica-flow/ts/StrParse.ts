@@ -19,7 +19,7 @@ export const updateParserError = (state: i_ParserState, errorMsg: string) => ({
     error: errorMsg
 } as i_ParserState);
 
-interface i_ParserState {
+export interface i_ParserState {
     /** Current index being parsed on the given target. */
     index: number,
     /** Result of the parser. */

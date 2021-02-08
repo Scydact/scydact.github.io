@@ -42,6 +42,8 @@ export function getMinMax(arr: number[]) {
     return [min, max];
 }
 
+export const fixFloatError = (val: number) => Number.parseFloat(val.toPrecision(15));
+
 export class ClassWatcher {
     targetNode: HTMLElement;
     classToWatch: string;
