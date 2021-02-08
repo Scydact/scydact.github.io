@@ -59,3 +59,11 @@ button {
 svg text {
     user-select: none;
 }
+
+.CodeMirror {
+    resize: vertical;
+    font-family: 'Fira Code', 'Lucida Console', Courier, monospace;
+    font-size: 14px;
+    border: 1px solid gray;
+    border-radius: .5em;
+}

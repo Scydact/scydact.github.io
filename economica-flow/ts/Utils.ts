@@ -42,8 +42,10 @@ export function getMinMax(arr: number[]) {
     return [min, max];
 }
 
+export const PF = (n, i) => (1 + i) ** -n;
+
 export const fixFloatError = (val: number) => Number.parseFloat(val.toPrecision(15));
-export const round = (num: number, digits=0) => Number.parseFloat(num.toFixed(digits));
+export const round = (num: number, digits = 0) => Number.parseFloat(num.toFixed(digits));
 export class ClassWatcher {
     targetNode: HTMLElement;
     classToWatch: string;
@@ -77,12 +79,12 @@ export class ClassWatcher {
     }
 
     mutationCallback = mutationsList => {
-        for(let mutation of mutationsList) {
+        for (let mutation of mutationsList) {
             if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
                 let currentClassState = mutation.target.classList.contains(this.classToWatch)
-                if(this.lastClassState !== currentClassState) {
+                if (this.lastClassState !== currentClassState) {
                     this.lastClassState = currentClassState
-                    if(currentClassState) {
+                    if (currentClassState) {
                         if (this.classAddedCallback) this.classAddedCallback();
                     }
                     else {

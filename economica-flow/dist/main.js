@@ -8,14 +8,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { commands, createFlow, lineParser } from "./commands.js";
-import { ClassWatcher, clearNode, createSVGNode, setWin, SVG_DOCSTRING } from "./Utils.js";
+import { ClassWatcher, clearNode, createSVGNode, fixFloatError, round, setWin, SVG_DOCSTRING } from "./Utils.js";
 import { render } from "./render.js";
 setWin({ p: lineParser });
 let NODES = {
     svg: document.createElementNS(SVG_DOCSTRING, 'svg'),
     svg_sub: createSVGNode('g', { class: 'container' }),
-    ta_in: document.createElement('textarea'),
-    ta_meta: document.createElement('textarea'),
+    ta_in: null,
+    ta_meta: null,
     ta_style: null,
     buffer: document.createElement('div'),
 };
@@ -31,11 +31,11 @@ let [WIDTH, HEIGHT] = [700, 400];
 }
 //#region EXPORT AS PNG + style config
 function getCss() {
-    let style = NODES.ta_style.doc.getValue();
+    let style = NODES.ta_style.get();
     if (style.trim() !== '')
         return style;
     let defaultStyle = DEFAULT_VALUES.style;
-    NODES.ta_style.setValue(defaultStyle);
+    NODES.ta_style.set(defaultStyle);
     return defaultStyle;
 }
 function getDefaultCss() {
@@ -47,7 +47,7 @@ function getDefaultCss() {
 function setCss(str) {
     let a = NODES.ta_style;
     if (a) {
-        a.setValue(str);
+        a.set(str);
         appendCss();
     }
 }
@@ -164,6 +164,7 @@ const DEFAULT_VALUES = {
     overlap SUM
     sepflow 0
     numrot 0
+    interest 3%
 
     `.trim().split('\n').map(x => x.trim()).join('\n'),
     data: `
@@ -186,6 +187,7 @@ const DEFAULT_VALUES = {
     `.trim().split('\n').map(x => x.trim()).join('\n'),
     size: HEIGHT * 3,
     transparency: false,
+    currentTab: 0,
 };
 let SAVED_VALUES;
 let SAVE_COOKIES = true;
@@ -193,20 +195,22 @@ function loadCookies() {
     return __awaiter(this, void 0, void 0, function* () {
         let x = localStorage.getItem(COOKIE_NAME);
         SAVED_VALUES = Object.assign(Object.assign({}, DEFAULT_VALUES), JSON.parse(x));
-        NODES.ta_in.value = SAVED_VALUES.data;
-        NODES.ta_meta.value = SAVED_VALUES.meta;
+        NODES.ta_in.set(SAVED_VALUES.data);
+        NODES.ta_meta.set(SAVED_VALUES.meta);
         SETTINGS_NODES.size.value = SAVED_VALUES.size;
         SETTINGS_NODES.transparency.checked = SAVED_VALUES.transparency;
         setCss(SAVED_VALUES.style);
+        document.querySelector('.tab')['tab']['openTab'](SAVED_VALUES.currentTab);
     });
 }
 function saveCookies() {
     SAVED_VALUES = {
         style: getCss(),
-        data: NODES.ta_in.value,
-        meta: NODES.ta_meta.value,
+        data: NODES.ta_in.get(),
+        meta: NODES.ta_meta.get(),
         size: parseInt(SETTINGS_NODES.size.value),
         transparency: SETTINGS_NODES.transparency.checked,
+        currentTab: document.querySelector('.tab')['tab']['current'],
     };
     if (SAVE_COOKIES)
         localStorage.setItem(COOKIE_NAME, JSON.stringify(SAVED_VALUES));
@@ -217,10 +221,15 @@ function removeCookies() {
 //#endregion
 //#region ONLOAD RUN
 function doRender() {
-    let data = NODES.ta_in.value;
-    let meta = NODES.ta_meta.value;
+    let [data, meta] = getDataStr();
     let flow = createFlow(data, meta);
-    render(NODES.svg_sub, [WIDTH, HEIGHT], flow);
+    let x = render(NODES.svg_sub, [WIDTH, HEIGHT], flow);
+    clearLog();
+    addLog(flow.log);
+    addLog([
+        `Present value with i=${fixFloatError(flow.meta.interest * 100)}% ` +
+            `is ${round(flow.pv, flow.meta.roundDigits)}`
+    ]);
     //svgDebug();
 }
 const svgDebug = function () {
@@ -255,32 +264,85 @@ function populateCmdTable() {
         r.insertCell().innerText = cmd[2];
     }
 }
+function clearLog() {
+    clearNode(document.getElementById('log'));
+}
+function addLog(x) {
+    let l = document.getElementById('log');
+    let o = l.innerText.split('\n');
+    o = [...o, ...x];
+    l.innerText = o.join('\n');
+}
+//#endregion
+//#region Code editor stuff
+function getDataStr() {
+    let meta = NODES.ta_meta.get();
+    let newLineNumber = NODES.ta_meta.editor.doc.size + 1;
+    let data = NODES.ta_in.get();
+    NODES.ta_in.editor.setOption('firstLineNumber', newLineNumber);
+    return [data, meta];
+}
 window.addEventListener('load', () => __awaiter(void 0, void 0, void 0, function* () {
     DEFAULT_VALUES.style = yield getDefaultCss();
     populateCmdTable();
-    setWin({ DEFAULT_VALUES, doRender });
+    setWin({ DEFAULT_VALUES, NODES, doRender });
+    // Meta code
+    {
+        let a = document.createElement('textarea');
+        a.id = 'txtinputmeta';
+        let b = document.getElementById('container_meta');
+        b.appendChild(a);
+        let editor = CodeMirror.fromTextArea(a, {
+            lineNumbers: true,
+            mode: null,
+        });
+        editor.on('change', doRender);
+        editor.setSize(null, 150);
+        NODES.ta_meta = {
+            editor,
+            get: () => editor.getValue(),
+            set: (x) => editor.setValue(x)
+        };
+        setWin({ editor });
+        new ClassWatcher(b, 'disabled', null, () => editor.refresh());
+    }
     // Code
-    NODES.ta_in.id = 'txtinput';
-    document.getElementById('container_in').appendChild(NODES.ta_in);
-    NODES.ta_in.addEventListener('input', doRender);
-    NODES.ta_meta.id = 'txtinputmeta';
-    document.getElementById('container_meta').appendChild(NODES.ta_meta);
-    NODES.ta_meta.addEventListener('input', doRender);
+    {
+        let a = document.createElement('textarea');
+        a.id = 'txtinput';
+        document.getElementById('container_in').appendChild(a);
+        let editor = CodeMirror.fromTextArea(a, {
+            lineNumbers: true,
+            mode: null,
+        });
+        editor.on('change', doRender);
+        editor.setSize(null, 300);
+        NODES.ta_in = {
+            editor,
+            get: () => editor.getValue(),
+            set: (x) => editor.setValue(x),
+        };
+    }
     // Styles
-    let a = document.createElement('textarea');
-    a.id = 'styleinput';
-    let b = document.getElementById('container_style');
-    b.appendChild(a);
-    var editor = CodeMirror.fromTextArea(a, {
-        lineNumbers: true,
-        mode: 'css',
-        tabSize: 4,
-    });
-    editor.on('change', appendCss);
-    editor.setSize(null, 500);
-    NODES.ta_style = editor;
-    setWin({ editor });
-    new ClassWatcher(b, 'disabled', null, () => editor.refresh());
+    {
+        let a = document.createElement('textarea');
+        a.id = 'styleinput';
+        let b = document.getElementById('container_style');
+        b.appendChild(a);
+        let editor = CodeMirror.fromTextArea(a, {
+            lineNumbers: true,
+            mode: 'css',
+            tabSize: 4,
+        });
+        editor.on('change', appendCss);
+        editor.setSize(null, 500);
+        NODES.ta_style = {
+            editor,
+            get: () => editor.getValue(),
+            set: (x) => editor.setValue(x)
+        };
+        new ClassWatcher(b, 'disabled', null, () => editor.refresh());
+    }
     // SVG
     NODES.svg.id = 'canvas';
     NODES.svg.appendChild(NODES.svg_sub);

@@ -5,17 +5,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generador de diagrama de flujo de efectivo</title>
-    <script defer src="dist/main.js" type="module"></script>
-    <link rel="stylesheet" href="../style.css">
-    <link rel="stylesheet" href="style.css">
 
-    <link rel="stylesheet" href="tabs.css">
-    <script defer src="tabs.js"></script>
-
-    <!-- Create a simple CodeMirror instance -->
+    
+    <!-- Scripts -->
     <link rel="stylesheet" href="./lib/codemirror.css">
     <script defer src="./lib/codemirror.js"></script>
     <script defer src="./lib/mode/css.js"></script>
+    
+    <script defer src="tabs.js"></script>
+    <link rel="stylesheet" href="tabs.css">
+    
+    <!-- Main Script -->
+    <script defer src="dist/main.js" type="module"></script>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
@@ -58,7 +61,7 @@
             <table id='meta-commands-table' class='cmd-tbl'></table>
             <h2>Meta Data</h2>
             <button onclick="
-            document.getElementById('txtinputmeta').value=DEFAULT_VALUES.meta;
+            NODES.ta_meta.set(DEFAULT_VALUES.meta);
             doRender();
             ">Reset</button>
             <!-- <textarea id=txtinput></textarea> -->
@@ -93,14 +96,18 @@
     <div id='container_in' class='card'>
         <h2>Plot Data</h2>
         <button onclick="
-        document.getElementById('txtinput').value=DEFAULT_VALUES.data;
+        NODES.ta_in.set(DEFAULT_VALUES.data);
         doRender();
         ">Reset</button>
         <!-- <textarea id=txtinput></textarea> -->
     </div>
 
-    <div id=log></div>
+    
     <div id=container_canvas class='card'></div>
+    <div id='log-container' class='card'>
+        <h4>Execution log</h4>
+        <dir id='log'></dir>
+    </div>
     <!-- <div id='hiddenBuffer' class='hidden'></div> -->
     <footer>
         Scydact 2021.

@@ -7,6 +7,7 @@ function polylinePoints(...arr: [number, number][]) {
 
 export function render(SVG: HTMLElement, size: [number, number], flow: i_flow) {
     const [WIDTH, HEIGHT] = size;
+    let log = [];
 
     function drawDivisions(flow: i_flow, parent) {
         let n = flow.end - flow.start + 1;
@@ -303,4 +304,6 @@ export function render(SVG: HTMLElement, size: [number, number], flow: i_flow) {
     );
     drawMeta(flow, renderGroup.title);
 
+
+    return log;
 }

@@ -1,5 +1,5 @@
 import { choice, number, remainder, sepBy1, sequenceOf, str, whitespace, optional, simpleInt, letters } from "./StrParse.js";
-import { fixFloatError, setWin } from "./Utils.js";
+import { fixFloatError, PF, setWin } from "./Utils.js";
 //#region Parser
 const choiceStr = (chars, caseSensitive) => {
     let choices = [];
@@ -169,6 +169,22 @@ export const commands = {
         })),
         a: (state, cmd) => {
             state.meta.numberRotated = cmd.value.value;
+            return state;
+        },
+    },
+    interest: {
+        desc: [
+            'meta',
+            'interest i%',
+            'Sets the interest to calculate PV. Result will be at the execution log.'
+        ],
+        p: sequenceOf([s('interest '), dt.numberFlow.p])
+            .map(x => ({
+            cmd: 'interest',
+            value: x[1],
+        })),
+        a: (state, cmd) => {
+            state.meta.interest = cmd.value.value;
             return state;
         },
     },
@@ -370,9 +386,11 @@ function processLines(lines) {
             sepFlows: false,
             numberRotated: true,
         },
+        log: [],
     };
     // Recompile commands
-    for (const l of lines) {
+    for (let i = 0; i < lines.length; ++i) {
+        const l = lines[i];
         let line_cmd = (l.result || []).filter(x => !x.ignore);
         if (!line_cmd.length)
             continue;
@@ -384,6 +402,12 @@ function processLines(lines) {
         if (state.hop_t)
             state.t++;
         state.hop_t = false;
+        // log stuff
+        if (l.isError)
+            state.log.push(`Parse error on line ${i + 1}: ${l.error}`);
+        const remainingText = l.target.slice(l.index);
+        if (remainingText.length)
+            state.log.push(`Unparsed text on line ${i + 1}: ${remainingText}`);
     }
     // Join arrows and stuff...
     const keys = Object.keys(state.values).map(x => parseInt(x)).sort((a, b) => a - b);
@@ -415,6 +439,11 @@ function processLines(lines) {
                 return p;
             }, [0, 0]).map(x => fixFloatError(x));
     }
+    let presentVal = [];
+    for (let key in state.values) {
+        presentVal.push(numValues[key] * PF(key, state.meta.interest));
+    }
+    let pv = (presentVal.length) ? presentVal.reduce((p, c) => p + c) : 0;
     let x = {
         keys,
         values: state.values,
@@ -423,6 +452,8 @@ function processLines(lines) {
         start: minVal,
         end: maxVal,
         meta: state.meta,
+        pv,
+        log: state.log,
     };
     setWin({ parserLines: lines, flow: x });
     return x;

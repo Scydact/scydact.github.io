@@ -4,6 +4,7 @@ function polylinePoints(...arr) {
 }
 export function render(SVG, size, flow) {
     const [WIDTH, HEIGHT] = size;
+    let log = [];
     function drawDivisions(flow, parent) {
         let n = flow.end - flow.start + 1;
         let d = WIDTH / n;
@@ -251,5 +252,6 @@ export function render(SVG, size, flow) {
     drawTimestamps(flow, renderGroup.timestamps);
     drawArrows(flow, renderGroup.arrows, renderGroup.arrowsTextText);
     drawMeta(flow, renderGroup.title);
+    return log;
 }
 //# sourceMappingURL=render.js.map
