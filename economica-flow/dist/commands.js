@@ -108,7 +108,16 @@ const dt = {
         p: sequenceOf([
             optional(str('r')),
             simpleInt,
-        ])
+        ]).map((x) => {
+            const [prefix, n] = x;
+            const raw = (prefix || '') + n;
+            return {
+                type: 'flow',
+                value: parseInt(n),
+                jumpType: (prefix === 'r') ? 'relative' : 'absolute',
+                raw,
+            };
+        }),
     },
 };
 const sepBySpaceParser = sepBy1(whitespace);
@@ -147,11 +156,20 @@ const commands = {
     },
     timeJump: {
         desc: ['t P', 'Jumps to a given period.'],
-        p: sequenceOf([str('t '), dt.numberTime.p]),
+        p: sequenceOf([str('t '), dt.numberTime.p])
+            .map(x => ({
+            cmd: 'timeJump',
+            value: x[1].value,
+            type: x[1].jumpType,
+        })),
     },
     simpleFlow: {
         desc: ['X', 'Adds an arrow at this time'],
-        p: dt.numberFlow.p,
+        p: dt.numberFlow.p
+            .map(x => ({
+            cmd: 'simpleFlow',
+            value: x,
+        })),
     },
 };
 const command = choice(Object.values(commands).map(x => x.p));

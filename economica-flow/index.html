@@ -5,12 +5,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generador de diagrama de flujo de efectivo</title>
-    <script defer src="dist/main.js" type="module" ></script>
+    <script defer src="dist/main.js" type="module"></script>
     <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="style.css">
 
     <link rel="stylesheet" href="tabs.css">
     <script defer src="tabs.js"></script>
+
+    <!-- Create a simple CodeMirror instance -->
+    <link rel="stylesheet" href="./lib/codemirror.css">
+    <script defer src="./lib/codemirror.js"></script>
+    <script defer src="./lib/mode/css.js"></script>
 </head>
 
 <body>
@@ -82,10 +87,10 @@
 
         <div class='tab-content'>
             <h3>Export settings:</h3>
-            <label>Size (Y): </label><input id="size_y" type="number"/>
+            <label>Size (Y): </label><input id="size_y" type="number" />
             <br>
-            <label for="transparency">Transparency: </label><input type="checkbox" id="transparency"/>
-            
+            <label for="transparency">Transparency: </label><input type="checkbox" id="transparency" />
+
             <h3>Downloads</h3>
             <button onclick="DOWNLOADS.png()">PNG</button>
             <button onclick="DOWNLOADS.svg()">SVG</button>
@@ -101,7 +106,7 @@
         <h2>Plot Data</h2>
         <button onclick="
         document.getElementById('txtinput').value=DEFAULT_VALUES.data;
-        render();
+        doRender();
         ">Reset</button>
         <!-- <textarea id=txtinput></textarea> -->
     </div>

@@ -1,4 +1,4 @@
-import { between, choice, many, many1, number, regex, remainder, sepBy1, sequenceOf, str, whitespace, optional, simpleInt } from "./StrParse.js";
+import { between, choice, many, many1, number, regex, remainder, sepBy1, sequenceOf, str, whitespace, optional, simpleInt, Parser } from "./StrParse.js";
 const fixFloatError = (val: number) => Number.parseFloat(val.toPrecision(15));
 
 function processInput(str) {
@@ -111,9 +111,19 @@ const dt = {
         p: sequenceOf([
             optional(str('r')),
             simpleInt,
-        ])
+        ]).map((x) => {
+            const [prefix, n] = x;
+            const raw = (prefix || '') + n;
+            return {
+                type: 'flow',
+                value: parseInt(n),
+                jumpType: (prefix === 'r') ? 'relative' : 'absolute',
+                raw,
+            }
+        }),
     },
 }
+
 const sepBySpaceParser = sepBy1(whitespace);
 const commands = {
     comment: {
@@ -124,6 +134,7 @@ const commands = {
                 value: x[1],
             })),
     },
+
     heading: {
         desc: ['h TEXT', 'Sets the plot\'s title.'],
         p: sequenceOf([str('h '), remainder])
@@ -132,6 +143,7 @@ const commands = {
                 value: x[1],
             })),
     },
+
     message: {
         desc: ['m TEXT', 'Sets a message on this line.'],
         p: sequenceOf([str('m '), remainder])
@@ -140,6 +152,7 @@ const commands = {
                 value: x[1],
             })),
     },
+
     messagePrevious: {
         desc: ['mp TEXT', 'Sets a message on the previous period.'],
         p: sequenceOf([str('mp '), remainder])
@@ -148,14 +161,26 @@ const commands = {
                 value: x[1],
             })),
     },
+
     timeJump: {
         desc: ['t P', 'Jumps to a given period.'],
-        p: sequenceOf([str('t '), dt.numberTime.p]),
+        p: sequenceOf([str('t '), dt.numberTime.p])
+            .map(x => ({
+                cmd: 'timeJump',
+                value: x[1].value,
+                type: x[1].jumpType,
+            })),
     },
+
     simpleFlow: {
         desc: ['X', 'Adds an arrow at this time'],
-        p: dt.numberFlow.p,
+        p: dt.numberFlow.p
+            .map(x => ({
+                cmd: 'simpleFlow',
+                value: x,
+            })),
     },
 }
+
 const command = choice(Object.values(commands).map(x => x.p));
 export const lineParser = sepBySpaceParser(command);
