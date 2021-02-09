@@ -183,16 +183,16 @@ export const commands = {
     numberRotate: {
         desc: [
             'meta',
-            'numrot BOOL',
+            'numrot BOOL|AUTO',
             'If true, flow values will be rotated 90°.'
         ],
-        p: sequenceOf([s('numrot '), dt.boolean.p])
+        p: sequenceOf([s('numrot '), choice([str('auto', false), dt.boolean.p])])
             .map(x => ({
             cmd: 'numberRotate',
             value: x[1],
         })),
         a: (state, cmd) => {
-            state.meta.numberRotated = cmd.value.value;
+            state.meta.numberRotated = (cmd.value === 'auto') ? 'auto' : cmd.value.value;
             return state;
         },
     },
@@ -209,6 +209,28 @@ export const commands = {
         })),
         a: (state, cmd) => {
             state.meta.interest = cmd.value.value;
+            return state;
+        },
+    },
+    widthSet: {
+        desc: [
+            'meta',
+            'interest i%',
+            'Sets the interest to calculate PV. Result will be at the execution log.'
+        ],
+        p: sequenceOf([s('width '), choice([str('auto', false), simpleInt])])
+            .map(x => ({
+            cmd: 'widthSet',
+            value: x[1],
+        })),
+        a: (state, cmd) => {
+            let a = cmd.value;
+            if (a === 'auto')
+                state.meta.width = a;
+            else if (isFinite(a))
+                state.meta.width = Math.abs(parseFloat(a));
+            else
+                state.log.push(`Process error @ width: "${a}" is not "auto" or a valid integer.`);
             return state;
         },
     },
@@ -314,7 +336,6 @@ export const commands = {
                 });
                 state.t++;
             }
-            state.hop_t = true;
             return state;
         },
     },
@@ -342,8 +363,6 @@ export const commands = {
                 });
                 state.t++;
             }
-            state.t--;
-            state.hop_t = true;
             return state;
         },
     },
@@ -376,8 +395,6 @@ export const commands = {
                 });
                 state.t++;
             }
-            state.t--;
-            state.hop_t = true;
             return state;
         },
     },
@@ -397,8 +414,8 @@ export function createFlow(data, meta) {
     const metaLines = metaLinesRaw.map(x => lineParser.run(x));
     return processLines([...metaLines, ...dataLines]);
 }
-function processLines(lines) {
-    let state = {
+function createDefaultState() {
+    return {
         pushVal: function (x) {
             if (this.values[this.t] === undefined)
                 this.values[this.t] = [];
@@ -413,13 +430,24 @@ function processLines(lines) {
             roundDigits: 2,
             overlapBehaviour: 'stack',
             sepFlows: false,
-            numberRotated: true,
+            numberRotated: 'auto',
+            width: 'auto',
         },
         log: [],
     };
+}
+function processLines(lines) {
+    let state = createDefaultState();
     // Recompile commands
     for (let i = 0; i < lines.length; ++i) {
         const l = lines[i];
+        // Log any weird errors:
+        if (l.target !== '' && l.isError) {
+            let t = (l.error.startsWith('sepBy1')) ?
+                `Malformed or invalid command: "${l.target}"` :
+                l.error;
+            state.log.push(`Parse error on line ${i + 1}: ${t}`);
+        }
         let line_cmd = (l.result || []).filter(x => !x.ignore);
         if (!line_cmd.length)
             continue;
@@ -436,7 +464,7 @@ function processLines(lines) {
             state.log.push(`Parse error on line ${i + 1}: ${l.error}`);
         const remainingText = l.target.slice(l.index);
         if (remainingText.length)
-            state.log.push(`Unparsed text on line ${i + 1}: ${remainingText}`);
+            state.log.push(`Warning! Unparsed text on line ${i + 1}: "${remainingText}"`);
     }
     // Join arrows and stuff...
     const keys = Object.keys(state.values).map(x => parseInt(x)).sort((a, b) => a - b);
@@ -483,6 +511,7 @@ function processLines(lines) {
         meta: state.meta,
         pv,
         log: state.log,
+        parserLines: lines,
     };
     setWin({ parserLines: lines, flow: x });
     return x;

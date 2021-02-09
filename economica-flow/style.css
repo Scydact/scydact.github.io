@@ -2,15 +2,15 @@ body {
     background: #eee;
 }
 textarea {
-    width     : 100%;
+    width: 100%;
     min-height: 200px;
     resize: vertical;
-    font-family: 'Fira Code', 'Lucida Console', Courier, monospace;
+    font-family: "Fira Code", "Lucida Console", Courier, monospace;
     padding-left: 1em;
 }
 
 #container_canvas {
-    margin    : 0 auto;
+    margin: 0 auto;
     text-align: center;
 }
 .cmd-tbl {
@@ -18,7 +18,7 @@ textarea {
     width: 100%;
 }
 .cmd-tbl tr:nth-child(even) td {
-    background-color: rgba(0,0,0,5%);
+    background-color: rgba(0, 0, 0, 5%);
 }
 .cmd-tbl td:first-child {
     min-width: 80px;
@@ -27,7 +27,7 @@ textarea {
 }
 .cmd-tbl td:last-child {
     width: auto;
-    padding-left: .5em;
+    padding-left: 0.5em;
 }
 .options {
     margin: 1em 0;
@@ -39,7 +39,7 @@ textarea {
     background: white;
     margin: 1em 0;
     padding: 1em;
-    box-shadow: 0 0 1em rgba(0,0,0,0.2);
+    box-shadow: 0 0 1em rgba(0, 0, 0, 0.2);
 }
 
 footer {
@@ -60,10 +60,44 @@ svg text {
     user-select: none;
 }
 
+#log-container {
+    min-height: 200px;
+}
+
+#log {
+    padding-left: 1.4em;
+}
+
+#log li {
+    margin: 0;
+}
+
+.warning {
+    color: goldenrod;
+    font-weight: bold;
+}
+.error {
+    color: crimson;
+    font-weight: bold;
+}
+
+@keyframes copy-click {
+    from {
+        background: yellow;
+    }
+    to {
+        background: transparent;
+    }
+}
+
+.copy-click-anim {
+    animation: copy-click .5s linear;
+}
+
 .CodeMirror {
     resize: vertical;
-    font-family: 'Fira Code', 'Lucida Console', Courier, monospace;
+    font-family: "Fira Code", "Lucida Console", Courier, monospace;
     font-size: 14px;
     border: 1px solid gray;
-    border-radius: .5em;
+    border-radius: 0.5em;
 }

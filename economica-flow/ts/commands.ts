@@ -204,16 +204,16 @@ export const commands: {
     numberRotate: {
         desc: [
             'meta',
-            'numrot BOOL',
+            'numrot BOOL|AUTO',
             'If true, flow values will be rotated 90°.'
         ],
-        p: sequenceOf([s('numrot '), dt.boolean.p])
+        p: sequenceOf([s('numrot '), choice([str('auto', false), dt.boolean.p])])
             .map(x => ({
                 cmd: 'numberRotate',
                 value: x[1],
             })),
         a: (state, cmd) => {
-            state.meta.numberRotated = cmd.value.value;
+            state.meta.numberRotated = (cmd.value === 'auto') ? 'auto' : cmd.value.value;
             return state;
         },
     },
@@ -231,6 +231,29 @@ export const commands: {
             })),
         a: (state, cmd) => {
             state.meta.interest = cmd.value.value;
+            return state;
+        },
+    },
+
+    widthSet: {
+        desc: [
+            'meta',
+            'interest i%',
+            'Sets the interest to calculate PV. Result will be at the execution log.'
+        ],
+        p: sequenceOf([s('width '), choice([str('auto', false), simpleInt])])
+            .map(x => ({
+                cmd: 'widthSet',
+                value: x[1],
+            })),
+        a: (state, cmd) => {
+            let a = cmd.value;
+            if (a === 'auto')
+                state.meta.width = a;
+            else if (isFinite(a))
+                state.meta.width = Math.abs(parseFloat(a));
+            else
+                state.log.push(`Process error @ width: "${a}" is not "auto" or a valid integer.`);
             return state;
         },
     },
@@ -344,7 +367,6 @@ export const commands: {
                 });
                 state.t++;
             }
-            state.hop_t = true;
             return state;
         },
     },
@@ -373,8 +395,6 @@ export const commands: {
                 });
                 state.t++;
             }
-            state.t--;
-            state.hop_t = true;
             return state;
         },
     },
@@ -408,8 +428,6 @@ export const commands: {
                 });
                 state.t++;
             }
-            state.t--;
-            state.hop_t = true;
             return state;
         },
     },
@@ -434,51 +452,50 @@ export function createFlow(data: string, meta: string) {
     return processLines([...metaLines, ...dataLines]);
 }
 
-interface i_lineState {
-    pushVal: (Function),
-    values: {
-        [key: number]: any[],
-    },
-    t: number,
-    hop_t: boolean,
-    meta: {
-        title: string,
-        interest: number,
-        roundDigits: number,
-        overlapBehaviour: 'sum' | 'stack',
-        sepFlows: boolean,
-        numberRotated: boolean,
-    },
-    log: string[];
-}
+type i_lineState = ReturnType<typeof createDefaultState>;
 
-export type i_flow = ReturnType<typeof processLines>;
-function processLines(lines: i_cmd_parser_result[]) {
-    let state: i_lineState = {
+function createDefaultState() {
+    return {
         pushVal: function (x: any) {
             if (this.values[this.t] === undefined)
                 this.values[this.t] = [];
             this.values[this.t].push(x);
         },
-        values: {},
+        values: {} as { [key: number]: any[], },
         t: 0,
         hop_t: false,
         meta: {
             title: '',
             interest: 0.05,
             roundDigits: 2,
-            overlapBehaviour: 'stack',
+            overlapBehaviour: 'stack' as 'stack' | 'sum',
             sepFlows: false,
-            numberRotated: true,
+            numberRotated: 'auto' as boolean | 'auto',
+            width: 'auto' as number | 'auto',
         },
-        log: [],
+        log: [] as string[],
     }
+}
+
+export type i_flow = ReturnType<typeof processLines>;
+function processLines(lines: i_cmd_parser_result[]) {
+    let state: i_lineState = createDefaultState();
 
     // Recompile commands
     for (let i = 0; i < lines.length; ++i) {
         const l = lines[i];
+
+        // Log any weird errors:
+        if (l.target !== '' && l.isError) {
+            let t = ((l.error as string).startsWith('sepBy1')) ?
+                `Malformed or invalid command: "${l.target}"` :
+                l.error;
+            state.log.push(`Parse error on line ${i + 1}: ${t}`);
+        }
+
         let line_cmd = (l.result || []).filter(x => !x.ignore);
         if (!line_cmd.length) continue;
+
         for (const cmd of line_cmd) {
             let a = commands[cmd.cmd];
             if (a) state = a.a(state, cmd);
@@ -489,7 +506,7 @@ function processLines(lines: i_cmd_parser_result[]) {
         // log stuff
         if (l.isError) state.log.push(`Parse error on line ${i + 1}: ${l.error}`);
         const remainingText = l.target.slice(l.index);
-        if (remainingText.length) state.log.push(`Unparsed text on line ${i + 1}: ${remainingText}`);
+        if (remainingText.length) state.log.push(`Warning! Unparsed text on line ${i + 1}: "${remainingText}"`);
     }
 
     // Join arrows and stuff...
@@ -542,6 +559,7 @@ function processLines(lines: i_cmd_parser_result[]) {
         meta: state.meta,
         pv,
         log: state.log,
+        parserLines: lines,
     };
     setWin({ parserLines: lines, flow: x })
     return x;

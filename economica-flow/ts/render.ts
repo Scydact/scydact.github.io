@@ -5,8 +5,8 @@ function polylinePoints(...arr: [number, number][]) {
     return arr.map(x => x.join(',')).join(' ');
 }
 
-export function render(SVG: HTMLElement, size: [number, number], flow: i_flow) {
-    const [WIDTH, HEIGHT] = size;
+export function render(SVG: HTMLElement, SVG_ELEM: SVGSVGElement, flow: i_flow) {
+    let [WIDTH, HEIGHT] = [700, 400];
     let log = [];
 
     function drawDivisions(flow: i_flow, parent) {
@@ -40,6 +40,7 @@ export function render(SVG: HTMLElement, size: [number, number], flow: i_flow) {
     function drawArrows(flow: i_flow, parent, text_text_parent) {
         let n = flow.end - flow.start + 1;
         let dx = WIDTH / n;
+        let arrElements = [];
 
         let doOverlap = flow.meta.overlapBehaviour === 'sum';
         let sepFlow = flow.meta.sepFlows;
@@ -83,6 +84,7 @@ export function render(SVG: HTMLElement, size: [number, number], flow: i_flow) {
                 let dy = Math.sign(v_reduce) * Math.max(minSize, Math.abs(v_reduce) / abs);
                 var arrow = drawArrow(parent, x0, dy);
                 drawArrowTextNumber(arrow, x0, dy, value, flow);
+                arrElements.push(arrow);
             }
 
             let dy;
@@ -97,6 +99,7 @@ export function render(SVG: HTMLElement, size: [number, number], flow: i_flow) {
                 drawArrowTextText(p, x0, dy, text, flow);
             }
         }
+        return arrElements;
     }
     function drawArrow(parent, x, size, size_init = 0) {
         if (size === 0 || isNaN(size)) return;
@@ -267,8 +270,69 @@ export function render(SVG: HTMLElement, size: [number, number], flow: i_flow) {
         }
     }
 
+    function getWidth(flow: i_flow, test_arrow_parent: HTMLElement) {
+        let w = flow.meta.width;
+
+        // Get auto width by getting max arrow width;
+        let values = Object.values(flow.numValues)
+        let longestValArr = Math.min(...values.map(x => -Math.abs(x)));
+
+        function sampleWidth() {
+            let arrow = drawArrow(test_arrow_parent, 0, 1);
+            drawArrowTextNumber(arrow, 0, 1, [longestValArr], flow); // flow is used just to get settings
+            let a = (arrow as any).getBBox();
+            let aw = a.width;
+            test_arrow_parent.removeChild(arrow); // clean up
+            return aw * values.length;
+        }
+
+        let o = 700;
+        if (flow.meta.numberRotated === 'auto') {
+            flow.meta.numberRotated = false;
+            o = sampleWidth();
+            if (o / HEIGHT > 2.5) {
+                flow.meta.numberRotated = true;
+                o = sampleWidth();
+            }
+        } else {
+            o = sampleWidth();
+        }
+
+        if (w !== 'auto') {
+            // get clipping condition
+            if (o > w) log.push('Warning! Number clipping present. Try setting "width auto".')
+            return w;
+        }
+        return Math.max(700, o);
+    }
+
+    function setViewBox() {
+        const { x, y, width, height } = (SVG as any).getBBox();
+        const margin = 5; // 5px margin, to show arrowhead at border correctly
+        let a = [
+            x - margin,
+            y - margin,
+            width + 2 * margin,
+            height + 2 * margin
+        ];
+        SVG_ELEM.setAttribute('viewBox', a.join(' '));
+    }
+
+    // ##########################
+    // DO ACTUAL RENDER
+    // ##########################
     clearNode(SVG);
 
+    const renderGroup = {
+        timeTicks: addSVGNode(SVG, 'g', { class: 'baseline' }),
+        timestamps: addSVGNode(SVG, 'g', { class: 'timestamps' }),
+        arrows: addSVGNode(SVG, 'g', { class: 'arrows' }),
+        arrowsTextText: addSVGNode(SVG, 'g', { class: 'arrows-text-text' }),
+        title: addSVGNode(SVG, 'g', { class: 'text-title' }),
+    }
+
+    // get width (if auto)
+    WIDTH = getWidth(flow, renderGroup.arrows);
 
     const baseline = addSVGNode(SVG, 'line', {
         x1: 0,
@@ -286,14 +350,7 @@ export function render(SVG: HTMLElement, size: [number, number], flow: i_flow) {
             [WIDTH - arrowLength, HEIGHT / 2 - arrowLength]
         ),
         class: 'baseline',
-    })
-    const renderGroup = {
-        timeTicks: addSVGNode(SVG, 'g', { class: 'baseline' }),
-        timestamps: addSVGNode(SVG, 'g', { class: 'timestamps' }),
-        arrows: addSVGNode(SVG, 'g', { class: 'arrows' }),
-        arrowsTextText: addSVGNode(SVG, 'g', { class: 'arrows-text-text' }),
-        title: addSVGNode(SVG, 'g', { class: 'text-title' }),
-    }
+    });
 
     drawDivisions(flow, renderGroup.timeTicks);
     drawTimestamps(flow, renderGroup.timestamps);
@@ -304,6 +361,18 @@ export function render(SVG: HTMLElement, size: [number, number], flow: i_flow) {
     );
     drawMeta(flow, renderGroup.title);
 
+    setViewBox();
+
+    // Warn user to use numrot if width is too large!
+    if (WIDTH / HEIGHT > 3) {
+        let t = 'Warning! Output dimensions too wide. ';
+        if (flow.meta.width === 'auto' && !flow.meta.numberRotated) {
+            t += 'To mitigate this, try using "numrot 1".'
+        } else if (flow.meta.width !== 'auto') {
+            t += 'Try using a lower size, or "width auto" and "numrot 1".'
+        }
+        log.push(t);
+    }
 
     return log;
 }

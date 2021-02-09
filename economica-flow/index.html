@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generador de diagrama de flujo de efectivo</title>
+    <title>Cash Flow Diagrams</title>
 
     
     <!-- Scripts -->
@@ -22,7 +22,7 @@
 </head>
 
 <body>
-    <h1>Generador de diagrama de flujo de efectivo</h1>
+    <h1>Cash flow diagram generator</h1>
     <div class='tab-wrapper options card'>
         <div class='tab'>
             <button class='tab-link'>Commands</button>
@@ -67,7 +67,7 @@
         <div id='container_meta' class='tab-content'>
             <h3>Meta commands</h3>
             <table id='meta-commands-table' class='cmd-tbl'></table>
-            <h2>Meta Data</h2>
+            <h3>Meta Data</h3>
             <button onclick="
             NODES.ta_meta.set(DEFAULT_VALUES.meta);
             doRender();
@@ -97,6 +97,7 @@
             <h3>Other</h3>
             <button onclick="OTHER.clipboard()">Copy to clipboard</button>
             <button onclick="OTHER.newTab()">Open in new tab</button>
+            <p>PS: </p>
         </div>
     </div>
 
@@ -113,8 +114,8 @@
     
     <div id=container_canvas class='card'></div>
     <div id='log-container' class='card'>
-        <h4>Execution log</h4>
-        <dir id='log'></dir>
+        <h3>Execution log</h3>
+        <ul id='log'></ul>
     </div>
     <!-- <div id='hiddenBuffer' class='hidden'></div> -->
     <footer>

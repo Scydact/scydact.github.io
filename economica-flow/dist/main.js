@@ -23,11 +23,9 @@ let SETTINGS_NODES = {
     size: document.getElementById('size_y'),
     transparency: document.getElementById('transparency'),
 };
-let [WIDTH, HEIGHT] = [700, 400];
-{
-    let [dx, dy] = [WIDTH, HEIGHT].map(x => 0.1 * x);
-    let a = [-dx, -dy - 10, WIDTH + 2 * dx, HEIGHT + 2 * dy];
-    NODES.svg.setAttribute('viewBox', a.join(' '));
+function getSvgSize() {
+    let a = NODES.svg.getBoundingClientRect();
+    return [a.width, a.height];
 }
 //#region EXPORT AS PNG + style config
 function getCss() {
@@ -81,7 +79,8 @@ function fillAlpha(ctx, bgColor) {
 function getPngBlobAsync(svg, scale = 2, forceRemoveTransparency = false) {
     return __awaiter(this, void 0, void 0, function* () {
         //when using on another file, change hiddenBuffer to some hidden space on Document.
-        let size = [WIDTH, HEIGHT].map(x => Math.round(x * scale));
+        // TODO: Get svg size function => [width, height];
+        let size = getSvgSize().map(x => Math.round(x * scale));
         clearNode(NODES.buffer);
         let svgblob = getSvgBlob(svg);
         let canvas = document.createElement('canvas');
@@ -138,7 +137,8 @@ function copyBlobToClipboard(blob) {
 const FILENAME = 'diagrama_flujo';
 function getScale() {
     let v = SETTINGS_NODES.size.value;
-    return parseFloat(v) / HEIGHT;
+    let s = getSvgSize();
+    return parseFloat(v) / s[1];
 }
 const DOWNLOADS = {
     png: () => __awaiter(void 0, void 0, void 0, function* () { return downloadFile(yield getPngBlobAsync(NODES.svg, getScale()), FILENAME + '.png'); }),
@@ -156,36 +156,53 @@ const OTHER = {
 setWin({ OTHER, DOWNLOADS });
 //#endregion
 //#region COOKIES
-const COOKIE_NAME = 'economica-flow-v1';
+const COOKIE_NAME = 'economica-flow-v2';
 const DEFAULT_VALUES = {
     style: '',
     meta: `
     round 2
     overlap SUM
     sepflow 0
-    numrot 0
+    numrot auto
+    width auto
     interest 3%
 
     `.trim().split('\n').map(x => x.trim()).join('\n'),
     data: `
-    h Flujo
+    h Some flow diagram example
 
-    5000 -200 -300 -2400
-    -1500 m Cookies
-    -500 
+    % Sum of inputs on same place
+    5k -200 -300 -2400
+    
+    % Some random flows
+    -1.5k m Cookies
+    -500
     +1000 m Pizza
-    -800
-    -800
-
-    % Mover 3 sin pagar
+    
+    % Annuality + gradient
+    a 5 -800
+    t r-5
+    sa 5 50
+    
+    
+    % Move 3 without any flow
     t r3
-    1500
-
-    t 7
-    m Trimestre
-    m sin pagar
+    
+    % Pay 2k
+    2k
+    
+    % Show message
+    t r-3
+    m Trimester
+    m without any
+    m cash flow
+    
+    t 6
+    m .
+    m Gradient + Annuality
+    m F = 800 - n*50
     `.trim().split('\n').map(x => x.trim()).join('\n'),
-    size: HEIGHT * 3,
+    size: 1e3,
     transparency: false,
     currentTab: 0,
 };
@@ -223,26 +240,28 @@ function removeCookies() {
 function doRender() {
     let [data, meta] = getDataStr();
     let flow = createFlow(data, meta);
-    let x = render(NODES.svg_sub, [WIDTH, HEIGHT], flow);
+    let renderLog = render(NODES.svg_sub, NODES.svg, flow);
     clearLog();
-    addLog(flow.log);
     addLog([
         `Present value with i=${fixFloatError(flow.meta.interest * 100)}% ` +
             `is ${round(flow.pv, flow.meta.roundDigits)}`
     ]);
+    addLog([...flow.log, ...renderLog]);
     //svgDebug();
 }
 const svgDebug = function () {
     const svg = NODES.svg;
-    const texts = svg.getElementsByClassName('arrows-text-number');
+    const texts = svg.getElementsByClassName('arrow');
     for (const txt of [...texts]) {
         const bbox = txt.getBBox();
+        // const tbbox = txt.getBoundingClientRect();
         const a = {
             x: bbox.x,
             y: bbox.y,
             width: bbox.width,
             height: bbox.height,
             fill: 'red',
+            opacity: 0.5,
         };
         txt.parentNode.insertBefore(createSVGNode('rect', a), txt);
     }
@@ -269,9 +288,17 @@ function clearLog() {
 }
 function addLog(x) {
     let l = document.getElementById('log');
-    let o = l.innerText.split('\n');
-    o = [...o, ...x];
-    l.innerText = o.join('\n');
+    for (const t of x) {
+        let o = document.createElement('li');
+        o.innerText = t;
+        if (t.toLowerCase().includes('error')) {
+            o.classList.add('error');
+        }
+        if (t.toLowerCase().includes('warning')) {
+            o.classList.add('warning');
+        }
+        l.appendChild(o);
+    }
 }
 //#endregion
 //#region Code editor stuff
@@ -347,6 +374,14 @@ window.addEventListener('load', () => __awaiter(void 0, void 0, void 0, function
     NODES.svg.id = 'canvas';
     NODES.svg.appendChild(NODES.svg_sub);
     document.getElementById('container_canvas').appendChild(NODES.svg);
+    NODES.svg.addEventListener('click', () => {
+        OTHER.clipboard();
+        const a = () => NODES.svg.classList.remove('copy-click-anim');
+        const b = () => NODES.svg.classList.add('copy-click-anim');
+        a();
+        setTimeout(b, 10);
+        setTimeout(a, 3e3);
+    });
     // Hidden buffer
     NODES.buffer.classList.add('hidden');
     document.body.appendChild(NODES.buffer);
