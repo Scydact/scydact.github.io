@@ -169,7 +169,7 @@ export const commands: {
             'meta',
             'overlap TEXT',
             'Changes the default behaviour of overlapping flows. ' +
-            'Can be SUM or STACK'
+            'Can be SUM or STACK. (Implementation pending)'
         ],
         p: sequenceOf([s('overlap '), letters])
             .map(x => ({
@@ -238,8 +238,8 @@ export const commands: {
     widthSet: {
         desc: [
             'meta',
-            'interest i%',
-            'Sets the interest to calculate PV. Result will be at the execution log.'
+            'width n|AUTO',
+            'Sets the width of the plot.'
         ],
         p: sequenceOf([s('width '), choice([str('auto', false), simpleInt])])
             .map(x => ({
