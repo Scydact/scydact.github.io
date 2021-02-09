@@ -38,19 +38,27 @@
             </ul>
             <h3>Commands:</h3>
             <table id='commands-table' class='cmd-tbl'></table>
-            <h3>Multiple commands per line:</h3>
-            <table>
+            <h3>Tips:</h3>
+            <table class='cmd-tbl'>
                 <tr>
                     <td>X X X</td>
-                    <td>Sets level to A, B, and then C.</td>
+                    <td>Sets all these flows on a single time period.</td>
                 </tr>
                 <tr>
                     <td>X X t Y X</td>
                     <td>Sets X, X on same t, changes to t=Y and then sets X on t=y.</td>
                 </tr>
                 <tr>
-                    <td></td>
-                    <td></td>
+                    <td>X, G, g</td>
+                    <td>Some numeric arguments can be formated with suffixes "k,M,%"</td>
+                </tr>
+                <tr>
+                    <td>n→tn→t3</td>
+                    <td>Some numeric 'n' arguments (like a n X, or sa n G) can be prefixed with a t, to indicate "up to this period".</td>
+                </tr>
+                <tr>
+                    <td>P→Pr→3r</td>
+                    <td>Some period number 'P' arguments (like t P) can be prefixed with a r, to indicate a "relative jump"</td>
                 </tr>
             </table>
             <p>Any text command (m, %, h...) will assume the rest of the line as the text.</p>

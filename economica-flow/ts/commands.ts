@@ -49,6 +49,31 @@ const dt = {
             }
         }),
     },
+
+    numberTimeDelta: {
+        p: sequenceOf([
+            optional(str('t')),
+            simpleInt,
+        ]).map((x) => {
+            const [prefix, n] = x;
+            const raw = (prefix || '') + n;
+            return {
+                type: 'timeDelta',
+                value: parseInt(n),
+                jumpType: (prefix === 't') ? 'relative' : 'absolute',
+                raw,
+            }
+        }),
+        h: function (numberConstruct, currentTime) {
+            let { value, jumpType } = numberConstruct;
+            if (jumpType === 'relative') {
+                return value - currentTime + 1;
+            } else {
+                return value;
+            }
+        }
+    },
+
     boolean: {
         p: choice([
             simpleInt,
@@ -303,14 +328,15 @@ export const commands: {
             'a n X',
             'Adds n payments of X'
         ],
-        p: sequenceOf([s('a '), simpleInt, whitespace, dt.numberFlow.p])
+        p: sequenceOf([s('a '), dt.numberTimeDelta.p, whitespace, dt.numberFlow.p])
             .map(x => ({
                 cmd: 'annuality',
                 value: [x[1], x[3]],
             })),
 
         a: (state, cmd) => {
-            let imax = parseFloat(cmd.value[0]);
+            let imax = dt.numberTimeDelta.h(cmd.value[0], state.t);
+            if (imax < 0) state.log.push(`Process error @ a: Period ${cmd.value[0].raw} is in the past.`)
             for (let i = 0; i < imax; i++) {
                 state.pushVal({
                     type: 'flowSimple',
@@ -318,7 +344,6 @@ export const commands: {
                 });
                 state.t++;
             }
-            state.t--;
             state.hop_t = true;
             return state;
         },
@@ -330,14 +355,15 @@ export const commands: {
             'sa n G',
             'Adds an arithmetic sequence (sa) of n values in increments of G'
         ],
-        p: sequenceOf([s('sa '), simpleInt, whitespace, dt.numberFlow.p])
+        p: sequenceOf([s('sa '), dt.numberTimeDelta.p, whitespace, dt.numberFlow.p])
             .map(x => ({
                 cmd: 'arithmeticSequence',
                 value: [x[1], x[3]],
             })),
 
         a: (state, cmd) => {
-            let imax = parseFloat(cmd.value[0]);
+            let imax = dt.numberTimeDelta.h(cmd.value[0], state.t);
+            if (imax < 0) state.log.push(`Process error @ sa: Period ${cmd.value[0].raw} is in the past.`)
             let ogVal = cmd.value[1];
             for (let i = 0; i < imax; i++) {
                 let modVal = { ...ogVal, value: fixFloatError(i * ogVal.value) }
@@ -361,7 +387,7 @@ export const commands: {
         ],
         p: sequenceOf([
             s('sg '),
-            simpleInt, whitespace,
+            dt.numberTimeDelta.p, whitespace,
             dt.numberFlow.p, whitespace,
             dt.numberFlow.p
         ]).map(x => ({
@@ -370,7 +396,8 @@ export const commands: {
         })),
 
         a: (state, cmd) => {
-            let imax = parseFloat(cmd.value[0]);
+            let imax = dt.numberTimeDelta.h(cmd.value[0], state.t);
+            if (imax < 0) state.log.push(`Process error @ sg: Period ${cmd.value[0].raw} is in the past.`)
             let ogVal = cmd.value[1];
             let increment = cmd.value[2].value;
             for (let i = 0; i < imax; i++) {
