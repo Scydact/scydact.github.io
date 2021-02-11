@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script defer src="https://unpkg.com/@popperjs/core@2"></script>
+    <script defer src="https://unpkg.com/tippy.js@6"></script>
+    <title>Byte viewer</title>
+    <style>
+        body {
+            background: black;
+            color: white;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+
+            font-size: 2rem;
+        }
+
+        .tippy-box {
+            font-size: 2rem;
+        }
+
+
+        #output {
+            flex: 70 1;
+
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+
+            word-wrap: break-word;
+
+            padding: 0 3rem;
+            font-size: 5em;
+            font-size: 10vw;
+            height: 70%;
+            text-align: left;
+
+            color: tomato;
+            font-weight: bold;
+        }
+
+        #output.decimal {
+            color: skyblue;
+        }
+
+        #input {
+            flex: 0 0;
+
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            max-width: 500px;
+
+            margin: auto;
+            padding: 2em;
+        }
+
+        #input label {
+            text-align: right;
+            padding-right: 1em;
+        }
+
+        #input input {
+            font-size: inherit;
+            color: inherit;
+            width: 100%;
+            background-color: black;
+            border: 1px solid gray;
+            padding-left: 1em;
+        }
+
+        #input input:first-of-type {
+            border-top-left-radius: 7px;
+            border-top-right-radius: 7px;
+        }
+
+        #input input:last-of-type {
+            border-bottom-left-radius: 7px;
+            border-bottom-right-radius: 7px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="output">aaa</div>
+    <div id="input">
+        <label for="bytesize">No. of bits</label>
+        <input type="number" id="bytesize" value="1" min="1" step="1">
+        <label for="word">Word</label>
+        <input type="text" id="word">
+    </div>
+    <script>
+        const COOKIE_NAME = 'byte-viewer-v0';
+        const DEFAULT_COOKIE = {
+            numBits: 2,
+            word: '0x0C',
+        }
+        const NODES = {
+            numBits: document.getElementById('bytesize'),
+            word: document.getElementById('word'),
+            out: document.getElementById('output'),
+        }
+
+        function parseInput(str) {
+            str = str.toLowerCase();
+            if (str.startsWith('0x')) {
+                return {
+                    radix: 16,
+                    n: parseInt(str, 16),
+                    prefix: '0x',
+                    suffix: '',
+                    og: str,
+                }
+            }
+            if (str.endsWith('h')) {
+                return {
+                    radix: 16,
+                    n: parseInt(str, 16),
+                    prefix: '',
+                    suffix: 'h',
+                    og: str,
+                }
+            }
+            if (str.match(/[a-f]/)) {
+                return {
+                    radix: 16,
+                    n: parseInt(str, 16),
+                    prefix: '',
+                    suffix: '',
+                    og: str,
+                }
+            }
+            return {
+                radix: 10,
+                n: parseInt(str),
+                prefix: '',
+                suffix: '',
+                og: str,
+            }
+        }
+
+        function getBinary(n, wl = 8) {
+            return n.toString(2).padStart(wl, '0');
+        }
+
+        function clearNode(node) {
+            while (node.firstChild)
+                node.removeChild(node.firstChild);
+        }
+
+        function buildBinNodes(n) {
+            if (isNaN(n)) {
+                let s = document.createElement('span');
+                s.innerText = '-';
+                return s;
+            }
+            const tippy = window['tippy'] || function () { };
+            const wl = parseInt(NODES.numBits.value)
+            const o = getBinary(n, wl);
+            const ol = o.length;
+            const d = document.createElement('div');
+
+            for (let i = 0; i < ol; i++) {
+                if ((ol - i) % 4 === 0) {
+                    let s = document.createElement('span');
+                    s.innerText = ' ';
+                    d.appendChild(s);
+                }
+                let s = document.createElement('span');
+                s.innerText = o[i];
+                s.addEventListener('click', () => doFlipChar(ol - i - 1));
+                d.appendChild(s);
+                tippy([s], {
+                    content: `Bit ${ol - i} = ${1 << (ol - i - 1)}`,
+                    interactiveBorder: 30,
+                })
+            }
+            return d;
+        }
+
+        function doFlipChar(i) {
+            let a = parseInput(NODES.word.value)
+            let v = a.n || 0;
+            if (i > 30) return; // will overflow into negative, ignore for now.
+            let nv = flipChar(v, i);
+
+            let nvt = (a.radix === 16) ? nv.toString(a.radix).padStart(2, '0') : nv.toString(a.radix);
+            let nvText = a.prefix + nvt.toUpperCase() + a.suffix;
+            NODES.word.value = nvText;
+            onWordEdit();
+        }
+
+        function flipChar(n, i) {
+            return n ^ (1 << i);
+        }
+
+        function createOgVal(o) {
+            const tippy = window['tippy'] || function () { };
+
+            let s = document.createElement('span');
+            s.innerText = o.og + '=';
+            s.classList.add('ogval');
+
+            let msg = (o.radix === 10) ? `Click to change to hex` : `Click to change to decimal`;
+            tippy([s], {
+                content: msg
+            });
+
+            s.addEventListener('click', () => {
+                let a = parseInput(NODES.word.value);
+                let nv = a.n;
+                NODES.word.value = (a.radix === 10) ? '0x' + nv.toString(16).padStart(2, '0') : nv.toString(10);
+                onWordEdit();
+            })
+            return s;
+        }
+
+        function onWordEdit() {
+            let newWord = NODES.word.value;
+            let newVal = parseInput(newWord);
+            let newBinarySpans = buildBinNodes(newVal.n);
+            clearNode(NODES.out);
+
+            NODES.out.appendChild(createOgVal(newVal));
+            NODES.out.appendChild(document.createElement('br'));
+            NODES.out.appendChild(newBinarySpans);
+
+            let a = newBinarySpans.innerText.length;
+            NODES.out.classList.toggle('decimal', newVal.radix === 10)
+            newBinarySpans.style.fontSize = `${Math.min(Math.max(100 / a, 5), 30)}vw`;
+        }
+
+        function loadCookie() {
+            let o = JSON.parse(localStorage.getItem(COOKIE_NAME));
+            o = { ...DEFAULT_COOKIE, ...o };
+            NODES.numBits.value = o.numBits;
+            NODES.word.value = o.word;
+        }
+        function saveCookie() {
+            let o = { ...DEFAULT_COOKIE };
+            o.numBits = parseInt(NODES.numBits.value);
+            o.word = NODES.word.value;
+            console.log(o);
+            localStorage.setItem(COOKIE_NAME, JSON.stringify(o));
+        }
+        function init() {
+            NODES.numBits = document.getElementById('bytesize');
+            NODES.word = document.getElementById('word');
+            NODES.out = document.getElementById('output');
+            loadCookie();
+
+
+            NODES.word.addEventListener('keyup', onWordEdit);
+            NODES.word.addEventListener('change', onWordEdit);
+            NODES.numBits.addEventListener('keyup', onWordEdit);
+            NODES.numBits.addEventListener('change', onWordEdit);
+            onWordEdit();
+        }
+        function unload() {
+            saveCookie();
+        }
+        window.addEventListener('load', init);
+        window.addEventListener('beforeunload', unload);
+    </script>
+</body>
+
+</html>
