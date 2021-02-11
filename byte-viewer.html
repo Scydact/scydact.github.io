@@ -110,8 +110,8 @@
         }
 
         function parseInput(str) {
-            str = str.toLowerCase();
-            if (str.startsWith('0x')) {
+            let nstr = str.toLowerCase();
+            if (nstr.startsWith('0x')) {
                 return {
                     radix: 16,
                     n: parseInt(str, 16),
@@ -120,7 +120,7 @@
                     og: str,
                 }
             }
-            if (str.endsWith('h')) {
+            if (nstr.endsWith('h')) {
                 return {
                     radix: 16,
                     n: parseInt(str, 16),
