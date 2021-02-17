@@ -40,8 +40,7 @@
 
             padding: 0 3rem;
             font-size: 5em;
-            font-size: 10vw;
-            height: 70%;
+            font-size: 15vmin;
             text-align: left;
 
             color: tomato;
@@ -100,8 +99,8 @@
     <script>
         const COOKIE_NAME = 'byte-viewer-v0';
         const DEFAULT_COOKIE = {
-            numBits: 2,
-            word: '0x0C',
+            numBits: 8,
+            word: '0x3C',
         }
         const NODES = {
             numBits: document.getElementById('bytesize'),
@@ -230,12 +229,12 @@
             clearNode(NODES.out);
 
             NODES.out.appendChild(createOgVal(newVal));
-            NODES.out.appendChild(document.createElement('br'));
+            // NODES.out.appendChild(document.createElement('br'));
             NODES.out.appendChild(newBinarySpans);
 
             let a = newBinarySpans.innerText.length;
             NODES.out.classList.toggle('decimal', newVal.radix === 10)
-            newBinarySpans.style.fontSize = `${Math.min(Math.max(100 / a, 5), 30)}vw`;
+            newBinarySpans.style.fontSize = `${Math.min(Math.max(100 / a, 5), 30)}vmin`;
         }
 
         function loadCookie() {
