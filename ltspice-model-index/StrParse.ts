@@ -52,7 +52,10 @@ export class Parser {
 
     run(target, _debug = false) {
         let runObj = { ...initialState, target };
-        if (_debug) runObj._debug = _debug;
+        if (_debug) {
+            runObj._debug = _debug;
+            debugger;
+        };
         return this.parserStateTransformerFn(runObj);
     }
 
@@ -226,7 +229,7 @@ export const digits = new Parser(parserState => {
 });
 
 /** Parser that tries to match a sequence of parsers */
-export const sequenceOf = parsers => new Parser(parserState => {
+export const sequenceOf = (parsers: Parser[]) => new Parser(parserState => {
     if (parserState.isError) {
         return parserState;
     }
@@ -247,7 +250,7 @@ export const sequenceOf = parsers => new Parser(parserState => {
 })
 
 /** Parser that tries to match a single parser of the given parsers */
-export const choice = parsers => new Parser(parserState => {
+export const choice = (parsers: Parser[]) => new Parser(parserState => {
     if (parserState.isError) {
         return parserState;
     }
@@ -401,12 +404,12 @@ export const boolean = (parser: Parser) => new Parser(parserState => {
     if (!testState.isError) {
         return testState;
     } else {
-        return parserState;
+        return updateParserResult(parserState, null);
     }
 });
 
 /** Parser that tries to match content located between two parsers  */
-export const between = (leftParser, rightParser) => contentParser => sequenceOf([
+export const between = (leftParser: Parser, rightParser: Parser) => (contentParser: Parser) => sequenceOf([
     leftParser,
     contentParser,
     rightParser
@@ -509,3 +512,13 @@ export const contextual = (generatorFn: GeneratorFunction) => {
 export const whitespace = regex(/^[\r\t\f\v ]+/);
 /** Parser that matches a safe word ([A-Za-z0-9_-]) */
 export const safeword = regex(/^[A-Za-z0-9_-]+/);
+
+/** Console logs the parserState before and after transforming */
+export const debugParser = (p: Parser) => new Parser(parserState => {
+    console.log('%cDebug parser at: ', 'color:yellow');
+    console.trace();
+    console.log(parserState);
+    const a = p.parserStateTransformerFn(parserState);
+    console.log(a);
+    return a;
+})

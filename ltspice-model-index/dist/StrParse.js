@@ -17,8 +17,11 @@ export class Parser {
     }
     run(target, _debug = false) {
         let runObj = Object.assign(Object.assign({}, initialState), { target });
-        if (_debug)
+        if (_debug) {
             runObj._debug = _debug;
+            debugger;
+        }
+        ;
         return this.parserStateTransformerFn(runObj);
     }
     /**
@@ -128,7 +131,7 @@ export const digits = new Parser(parserState => {
     return updateParserError(parserState, `digits: Could not match digits at index ${index}`);
 });
 /** Parser that tries to match a sequence of parsers */
-export const sequenceOf = parsers => new Parser(parserState => {
+export const sequenceOf = (parsers) => new Parser(parserState => {
     if (parserState.isError) {
         return parserState;
     }
@@ -144,7 +147,7 @@ export const sequenceOf = parsers => new Parser(parserState => {
     return updateParserResult(nextState, results);
 });
 /** Parser that tries to match a single parser of the given parsers */
-export const choice = parsers => new Parser(parserState => {
+export const choice = (parsers) => new Parser(parserState => {
     if (parserState.isError) {
         return parserState;
     }
@@ -267,11 +270,11 @@ export const boolean = (parser) => new Parser(parserState => {
         return testState;
     }
     else {
-        return parserState;
+        return updateParserResult(parserState, null);
     }
 });
 /** Parser that tries to match content located between two parsers  */
-export const between = (leftParser, rightParser) => contentParser => sequenceOf([
+export const between = (leftParser, rightParser) => (contentParser) => sequenceOf([
     leftParser,
     contentParser,
     rightParser
@@ -363,4 +366,13 @@ export const contextual = (generatorFn) => {
 export const whitespace = regex(/^[\r\t\f\v ]+/);
 /** Parser that matches a safe word ([A-Za-z0-9_-]) */
 export const safeword = regex(/^[A-Za-z0-9_-]+/);
+/** Console logs the parserState before and after transforming */
+export const debugParser = (p) => new Parser(parserState => {
+    console.log('%cDebug parser at: ', 'color:yellow');
+    console.trace();
+    console.log(parserState);
+    const a = p.parserStateTransformerFn(parserState);
+    console.log(a);
+    return a;
+});
 //# sourceMappingURL=StrParse.js.map
