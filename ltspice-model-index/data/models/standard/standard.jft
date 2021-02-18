@@ -10,7 +10,7 @@
 .model 2N5461 PJF(Is=1.5p Alpha=1e-4 Vk=300 Vto=-4.3 Vtotc=-3m Beta=1.5m Lambda=10m Betatce=-.5 Rd=10 Rs=10 Cgs=5p Cgd=5p Kf=3e-17 mfg=Siliconix)
 .model 2N5462 PJF(Is=1.5p Alpha=1e-4 Vk=300 Vto=-5.4 Vtotc=-3m Beta=2.0m Lambda=10m Betatce=-.5 Rd=10 Rs=10 Cgs=5p Cgd=5p Kf=3e-17 mfg=Siliconix)
 .model LSJ74A PJF(Beta=38m Betatce=-0.5 Vto=-.38 Vtotc=-2.5m Lambda=3m Is=12980f Xti=3 Isr=0 Nr=2 Alpha=10u N=1 Rd=7.748 Rs=7.748 Cgd=85.67p Cgs=78.27p Fc=0.5 Vk=100 M=324m Pb=0.3905 Kf=26640f Mfg=Linear_Systems)
-.model LSJ74B PJF(Beta(=9m Betatce=-0.5 Vto=-0.84 Vtotc=-2.5m Lambda=3m Is=6.32f RD=4.95 RS=4.45 CGD=115p CGS=52.5P Fc=0.5 Pb=1 Kf=0 Mfg=Linear_Systems)
+.model LSJ74B PJF(Beta=9m Betatce=-0.5 Vto=-0.84 Vtotc=-2.5m Lambda=3m Is=6.32f RD=4.95 RS=4.45 CGD=115p CGS=52.5P Fc=0.5 Pb=1 Kf=0 Mfg=Linear_Systems)
 .model LSJ74C PJF(Beta=10.6m Betatce=-0.5 Vto=-1.3 Vtotc=-2.5m Lambda=4m Is=12980f Xti=0 Nr=2 Alpha=10u N=1 Rd=7.748 Rs=7.748 Cgd=85.67p Cgs=78.27p Fc=0.5 Vk=100 M=324m Pb=0.3905 Kf=26640f Mfg=Linear_Systems)
 .model LSJ74D PJF(Beta=9.4m Betatce=-0.5 Vto=-1.76 Vtotc=-2.5m Lambda=3.8m Is=12980f Xti=3 Nr=2 Alpha=10u N=1 Rd=7.748 Rs=7.748 Cgd=85.67p Cgs=78.27p Fc=0.5 Vk=100 M=324m Pb=0.3905 Kf=26640f Mfg=Linear_Systems)
 .model J111 NJF(Beta=2.91m Betatce=-0.5 Vto=-4.047 Vtotc=-2.5m Lambda=17.5m Is=205.2f Xti=3 Isr=1988f Nr=2 Alpha=20.98u N=1 Rd=1 Rs=1 Cgd=6.46p Cgs=5.74p Fc=0.5 Vk=123.7 M=407m Pb=1 Kf=37860f Af=1 Mfg=Linear_Systems)
