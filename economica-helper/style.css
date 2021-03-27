@@ -50,7 +50,7 @@ formula {
     flex-direction: column;
 }
 formula .output:not(:empty),
-formula .inputs:not(:empty) {
+formula .inputs:not(:empty){
     display: grid;
     grid-template-columns: 1fr 1.5fr;
     grid-auto-rows: 2em;
@@ -69,4 +69,15 @@ formula .formula-static {
 }
 formula mjx-container {
     font-size: 100% !important;
+}
+
+formula .output-btn {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+}
+
+formula .output-btn button {
+    flex-grow: 1;
 }

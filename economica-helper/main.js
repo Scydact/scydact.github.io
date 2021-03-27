@@ -147,6 +147,7 @@ function buildFormula(opts) {
     let div_formula_dynamic = createNode('div', null, { class: 'formula-dynamic' });
     let div_inputs = createNode('div', null, { class: 'inputs' });
     let div_output = createNode('div', null, { class: 'output' });
+    let div_btns = createNode('div', null, { class: 'output-btn' });
 
     /** Functions that updates both dynamic_values and its HTML node values. */
     let dynamic_values_update = [];
@@ -183,7 +184,24 @@ function buildFormula(opts) {
         let x = formula && formula.dynamic;
         if (x) {
             let tex = formula.dynamic(dynamic_parameters, dynamic_values);
-            div_formula_dynamic.innerHTML = tex;
+            if (typeof (tex) === 'string')
+                div_formula_dynamic.innerHTML = tex;
+            else {
+                // Clear node
+                while (div_btns.firstChild)
+                    div_btns.removeChild(div_btns.firstChild)
+
+                // Set tex
+                if (tex.default)
+                    div_formula_dynamic.innerHTML = tex.default;
+
+                for (let key in tex) {
+                    if (key === 'default') continue;
+                    let btn = createNode('button', key);
+                    btn.addEventListener('click', () => navigator.clipboard?.writeText(tex[key]));
+                    div_btns.appendChild(btn);
+                }
+            }
             if (renderOpts.updateMath) updateMathContent(div_formula_dynamic);
         }
     }
@@ -239,7 +257,7 @@ function buildFormula(opts) {
                 let x = y.target;
                 let ov = x.getAttribute('oldvalue');
                 try {
-                    let a = math.evaluate(x.value.replace(/,/g,''));
+                    let a = math.evaluate(x.value.replace(/,/g, ''));
                     if (isNaN(a)) throw new Error('Not a number!');
                     x.value = a;
                     x.setAttribute('oldvalue', a);
@@ -266,6 +284,7 @@ function buildFormula(opts) {
     w.appendChild(div_formula_static);
     w.appendChild(div_inputs);
     w.appendChild(div_output);
+    w.appendChild(div_btns);
     w.appendChild(div_formula_dynamic);
 
     // Call render once after all dynamic_parameters have been set.

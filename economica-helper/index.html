@@ -78,7 +78,12 @@
                             tex: '$$\\textrm{P} = \\textrm{F}\\cdot\\frac{1}{(1+i)^n}$$',
                             dynamic: (p, v) => {
                                 let exp = (p.n === 1) ? '' : `^{${p.n}}`;
-                                return `$$ P = (${p.F})\\frac{1}{(1 + ${v.i})${exp}} = ${v.P}$$`
+                                return {
+                                    'factor': `\\frac{1}{(1 + ${v.i})${exp}}`,
+                                    'val * factor':  `${p.F}\\frac{1}{(1 + ${v.i})${exp}}`,
+                                    'val * factor (num)': `${p.F}*${v.factor}`,
+                                    default: `$$ P = (${p.F})\\frac{1}{(1 + ${v.i})${exp}} = ${v.P}$$`
+                                }
                             },
                         },
                     }
@@ -118,7 +123,12 @@
                             tex: '$$\\textrm{F} = \\textrm{P}\\cdot(1+i)^n$$',
                             dynamic: (p, v) => {
                                 let exp = (p.n === 1) ? '' : `^{${p.n}}`;
-                                return `$$ F = (${p.P})(1 + ${v.i})${exp} = ${v.F}$$`
+                                return {
+                                    'factor': `(1 + ${v.i})${exp}`,
+                                    'val * factor':  `${p.P}(1 + ${v.i})${exp}`,
+                                    'val * factor (num)': `${p.P}*${v.factor}`,
+                                    default: `$$ F = (${p.P})(1 + ${v.i})${exp} = ${v.F}$$`
+                                }
                             },
                         },
                     }
@@ -157,7 +167,14 @@
                         },
                         formula: {
                             tex: '$$P = A\\left[\\frac{(1+i)^n-1}{i(1+i)^n}\\right]$$',
-                            dynamic: (p, v) => `$$P = ${p.A}\\left[\\frac{(1+${v.i})^{${p.n}}-1}{${v.i}(1+${v.i})^{${p.n}}}\\right]=${v.P}$$`,
+                            dynamic: (p, v) => {
+                                return {
+                                    'factor': `\\left[\\frac{(1+${v.i})^{${p.n}}-1}{${v.i}(1+${v.i})^{${p.n}}}\\right]`,
+                                    'val * factor':  `${p.A}\\left[\\frac{(1+${v.i})^{${p.n}}-1}{${v.i}(1+${v.i})^{${p.n}}}\\right]`,
+                                    'val * factor (num)': `${p.A}*${v.factor}`,
+                                    default: `$$P = ${p.A}\\left[\\frac{(1+${v.i})^{${p.n}}-1}{${v.i}(1+${v.i})^{${p.n}}}\\right]=${v.P}$$`
+                                }
+                            },
                         },
                     }
                 </code>
@@ -195,7 +212,14 @@
                         },
                         formula: {
                             tex: '$$A = P\\left[\\frac{i(1+i)^n}{(1+i)^n-1}\\right]$$',
-                            dynamic: (p, v) => `$$A = ${p.P}\\left[\\frac{${v.i}(1+${v.i})^{${p.n}}}{(1+${v.i})^{${p.n}}-1}\\right]=${v.A}$$`,
+                            dynamic: (p, v) => {
+                                return {
+                                    'factor': `\\left[\\frac{${v.i}(1+${v.i})^{${p.n}}}{(1+${v.i})^{${p.n}}-1}\\right]`,
+                                    'val * factor': `${p.P}\\left[\\frac{${v.i}(1+${v.i})^{${p.n}}}{(1+${v.i})^{${p.n}}-1}\\right]`,
+                                    'val * factor (num)': `${p.P}*${v.factor}`,
+                                    default: `$$A = ${p.P}\\left[\\frac{${v.i}(1+${v.i})^{${p.n}}}{(1+${v.i})^{${p.n}}-1}\\right]=${v.A}$$`
+                                }
+                            },
                         },
                     }
                 </code>
@@ -233,7 +257,14 @@
                         },
                         formula: {
                             tex: '$$F = A\\left[\\frac{(1+i)^n-1}{i}\\right]$$',
-                            dynamic: (p, v) => `$$F = ${p.A}\\left[\\frac{(1+${v.i})^{${p.n}}-1}{${v.i}}\\right]=${v.F}$$`,
+                            dynamic: (p, v) => {
+                                return {
+                                        'factor': `\\left[\\frac{(1+${v.i})^{${p.n}}-1}{${v.i}}\\right]`,
+                                        'val * factor':  `${p.A}\\left[\\frac{(1+${v.i})^{${p.n}}-1}{${v.i}}\\right]`,
+                                        'val * factor (num)': `${p.A}*${v.factor}`,
+                                        default: `$$F = ${p.A}\\left[\\frac{(1+${v.i})^{${p.n}}-1}{${v.i}}\\right]=${v.F}$$`
+                                }
+                            },
                         },
                     }
                 </code>
@@ -271,7 +302,14 @@
                         },
                         formula: {
                             tex: '$$A = F\\left[\\frac{i}{(1+i)^n-1}\\right]$$',
-                            dynamic: (p, v) => `$$A = ${p.F}\\left[\\frac{${v.i}}{(1+${v.i})^{${p.n}}-1}\\right]=${v.A}$$`,
+                            dynamic: (p, v) => {
+                                return {
+                                    'factor': `\\left[\\frac{${v.i}}{(1+${v.i})^{${p.n}}-1}\\right]`,
+                                    'val * factor':  `${p.F}\\left[\\frac{${v.i}}{(1+${v.i})^{${p.n}}-1}\\right]`,
+                                    'val * factor (num)': `${p.F}*${v.factor}`,
+                                    default: `$$A = ${p.F}\\left[\\frac{${v.i}}{(1+${v.i})^{${p.n}}-1}\\right]=${v.A}$$`,
+                                }
+                            }
                         },
                     }
                 </code>
@@ -315,7 +353,12 @@
                             dynamic: (p, v) => {
                                 let { G, n } = p;
                                 let { i } = v;
-                                return `$$P_G = \\frac{${G}}{${i}}\\left[\\frac{(1+${i})^{${n}}-1}{${i}(1+${i})^{${n}}}-\\frac{${n}}{(1+${i})^{${n}}}\\right]=${v.P}$$`
+                                return {
+                                    'factor': `\\frac{1}{${i}}\\left[\\frac{(1+${i})^{${n}}-1}{${i}(1+${i})^{${n}}}-\\frac{${n}}{(1+${i})^{${n}}}\\right]`,
+                                    'val * factor':  `\\frac{${G}}{${i}}\\left[\\frac{(1+${i})^{${n}}-1}{${i}(1+${i})^{${n}}}-\\frac{${n}}{(1+${i})^{${n}}}\\right]`,
+                                    'val * factor (num)': `${G}*${v.factor}`,
+                                    default: `$$P_G = \\frac{${G}}{${i}}\\left[\\frac{(1+${i})^{${n}}-1}{${i}(1+${i})^{${n}}}-\\frac{${n}}{(1+${i})^{${n}}}\\right]=${v.P}$$`
+                                }
                             },
                         },
                     }
@@ -358,7 +401,12 @@
                             dynamic: (p, v) => {
                                 let { G, n } = p;
                                 let { i } = v;
-                                return `$$A_G = ${G}\\left[\\frac{1}{${i}}-\\frac{${n}}{(1+${i})^{${n}}-1}\\right]=${v.A}$$`
+                                return {
+                                    'factor': `\\left[\\frac{1}{${i}}-\\frac{${n}}{(1+${i})^{${n}}-1}\\right]`,
+                                    'val * factor':  `${G}\\left[\\frac{1}{${i}}-\\frac{${n}}{(1+${i})^{${n}}-1}\\right]`,
+                                    'val * factor (num)': `${G}*${v.factor}`,
+                                    default: `$$A_G = ${G}\\left[\\frac{1}{${i}}-\\frac{${n}}{(1+${i})^{${n}}-1}\\right]=${v.A}$$`
+                                }
                             },
                         },
                     }
@@ -422,9 +470,20 @@
                                 let { subfactor } = v._UNFORMATTED;
                                 a = subfactor;
                                 if (subfactor === 1) {
-                                    return `$$P_G = \\frac{(${n})(${A})}{(1+${i})} = ${v.P}$$`;
+                                    return {
+                                        'factor': `\\left[\\frac{${n}}{1+${i}}\\right]`,
+                                        'val * factor': `\\frac{(${n})(${A})}{(1+${i})}`,
+                                        'val * factor (num)': `${A}*${v.factor}`,
+                                        default: `$$P_G = \\frac{(${n})(${A})}{(1+${i})} = ${v.P}$$`
+                                    }
                                 } else {
-                                    return `$$P_G = ${A}\\left[\\frac{1-(\\frac{1+${g}}{1+${i}})^{${n}}}{${i}-${g}}\\right] = ${v.P}$$`
+                                    return {
+                                        'factor': `\\left[\\frac{1-(\\frac{1+${g}}{1+${i}})^{${n}}}{${i}-${g}}\\right]`,
+                                        'val * factor': `${A}\\left[\\frac{1-(\\frac{1+${g}}{1+${i}})^{${n}}}{${i}-${g}}\\right]`,
+                                        'val * factor (num)': `${A}*${v.factor}`,
+                                        default: `$$P_G = ${A}\\left[\\frac{1-(\\frac{1+${g}}{1+${i}})^{${n}}}{${i}-${g}}\\right] = ${v.P}$$`
+                                    }
+                                    
                                 }
                             },
                         },
