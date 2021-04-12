@@ -177,8 +177,9 @@
                 s.innerText = o[i];
                 s.addEventListener('click', () => doFlipChar(ol - i - 1));
                 d.appendChild(s);
+                let n = ol - i - 1;
                 tippy([s], {
-                    content: `Bit ${ol - i} = ${1 << (ol - i - 1)}`,
+                    content: `Bit ${n} = ${1 << n}`,
                     interactiveBorder: 30,
                 })
             }
