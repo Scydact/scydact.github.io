@@ -15,6 +15,13 @@
     }
 }
 
+
+footer {
+    margin-top: 10em;
+    color: rgba(0,0,0,0.5);
+    font-style: italic;
+}
+
 body {
     text-align: center;
 }
