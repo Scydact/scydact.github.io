@@ -1,0 +1,225 @@
+<html>
+
+<head>
+    <style>
+        html,
+        body {
+            font-family: monospace;
+        }
+
+        .initial {
+            background: rgba(0, 0, 255, 0.3);
+        }
+
+        .data {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .end {
+            background: rgba(46, 184, 142, 0.5);
+        }
+
+        .special {
+            background: red;
+        }
+    </style>
+</head>
+
+
+<body>
+    <input type="text" id="in" value="40225798442" />
+    <p id="out" />
+
+    <script>
+        function removeInvalidCedChars(ced) {
+            return ced.replace(/[^\d]/g, '');
+        }
+
+        function checkLuhn(cardNo) {
+            var s = 0;
+            var doubleDigit = false;
+            for (var i = cardNo.length - 1; i >= 0; i--) {
+                var digit = +cardNo[i];
+                if (doubleDigit) {
+                    digit *= 2;
+                    if (digit > 9)
+                        digit -= 9;
+                }
+                s += digit;
+                doubleDigit = !doubleDigit;
+            }
+            return s % 10 == 0;
+        }
+
+        function calcLuhn(cardNo, doubleDigit = false) {
+            // to check if valid, do (sum % 10 == 0)
+            var s = 0;
+            for (var i = cardNo.length - 1; i >= 0; i--) {
+                var digit = +cardNo[i];
+                if (doubleDigit) {
+                    digit *= 2;
+                    if (digit > 9)
+                        digit -= 9;
+                }
+                s += digit;
+                doubleDigit = !doubleDigit;
+            }
+            return [s, doubleDigit];
+        }
+
+        function getLuhnCheckDigit(payload) {
+            var s = calcLuhn(payload, true)[0];
+            return 10 - (s % 10);
+        }
+
+        function cedToHtml(cardNo, specialCharIndex = -1) {
+            if (!cardNo) return '';
+            var ranges = [
+                ['initial', [0, 3]],
+                ['data', [3, 10]],
+                ['end', [10, 11]],
+            ];
+
+            if (specialCharIndex >= 0)
+                ranges.push(['special', [specialCharIndex, specialCharIndex + 1]]);
+
+            var digits = cardNo.split('').map((c, i) => {
+                var classes = [];
+                ranges.forEach(([className, range]) => {
+                    if (range[0] <= i && i < range[1])
+                        classes.push(className);
+                })
+
+                return `<span class="${classes.join(' ')}">${c}</span>`;
+            })
+
+            return digits.join('');
+        }
+
+        function getCedDigit(cardNo, atIndex = -1) {
+            if (atIndex < 0 || atIndex >= cardNo.length)
+                atIndex = cardNo.length;
+
+            var before = cardNo.slice(0, atIndex);
+            var after = cardNo.slice(atIndex);
+
+            var s = 0;
+            var [n, doubleDigit] = calcLuhn(after, false);
+            s += n;
+
+            var [n,] = calcLuhn(before, !doubleDigit);
+            s += n;
+
+            var digit = 10 - (s % 10);
+            if (digit > 9)
+                digit -= 10;
+
+            // if (digit === 0) return 0;
+
+            if (doubleDigit) {
+                if ((digit & 1) == 0)
+                    digit >>= 1; // Simple divide by 2 if already even.
+                else
+                    digit = ((digit + 1) >> 1) + 4; // Minus 9, I guess?
+            }
+            // return [digit, s, doubleDigit];
+            return digit;
+        }
+
+        function getWithValidCedDigit(cardNo, atIndex = -1) {
+            if (!cardNo) return '';
+            if (atIndex < 0 || atIndex >= cardNo.length)
+                atIndex = cardNo.length;
+
+            var digit = getCedDigit(cardNo, atIndex);
+            var out = cardNo.split('');
+            out.splice(atIndex, 0, digit.toString())
+            return out.join('');
+        }
+    </script>
+
+    <script>
+        const CED_LEN = 11
+
+        nodes = {
+            input: document.getElementById('in'),
+            output: document.getElementById('out'),
+        }
+
+        function onCedChange(e) {
+            let t = [];
+            let input = nodes.input.value
+            let ced = removeInvalidCedChars(input)
+
+
+            t.push(cedToHtml(ced))
+
+            let isValid = checkLuhn(ced)
+            t.push(isValid ? 'OK' : 'INVALID!!')
+            t.push('')
+
+            // Status report
+            t.push(`Length: ${ced.length}/11`)
+            let prechk = getLuhnCheckDigit(ced.slice(0, -1))
+            t.push(`Checksum digit: ${prechk}`)
+            t.push('')
+
+            if (ced.length < 11)
+                t.push('INCOMPLETE!')
+
+            // Try to change different digits
+            if (ced.length == 11 && !isValid) {
+                t.push('Try these changes: ')
+                let list = []
+                let previous = ''
+                for (let i = 0; i < 11; i++) {
+                    let slicedCed = ced.slice(0, i) + ced.slice(i + 1)
+                    let newCed = getWithValidCedDigit(slicedCed, i)
+                    if (newCed !== previous) {
+                        list.push(cedToHtml(newCed, i))
+                        previous = newCed
+                    }
+                }
+
+                let o = list.map(x => `<li>${x}</li>`).join('')
+                t.push('<ol>' + o + '</ol>')
+            }
+
+            if (ced.length == 10 && !isValid) {
+                t.push('Try adding a digit: ')
+                let list = []
+                let previous = ''
+                for (let i = 0; i < 11; i++) {
+                    let newCed = getWithValidCedDigit(ced, i)
+                    if (newCed !== previous) {
+                        list.push(cedToHtml(newCed, i))
+                        previous = newCed
+                    }
+                }
+
+                let o = list.map(x => `<li>${x}</li>`).join('')
+                t.push('<ol>' + o + '</ol>')
+            }
+
+
+
+
+            nodes.output.innerHTML = t.join('<br>')
+        }
+
+
+        let elems = ['change', 'input']
+        elems.forEach((x) => {
+            nodes.input.addEventListener(x, onCedChange)
+        })
+
+        onCedChange(null)
+
+
+    </script>
+</body>
+
+
+
+
+</html>
