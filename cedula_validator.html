@@ -1,11 +1,77 @@
 <html>
 
 <head>
+    <link rel="stylesheet" href="style.css">
     <style>
         html,
-        body {
+        body,
+        * {
             font-family: monospace;
+            box-sizing: border-box;
         }
+
+        p {
+            margin: 0;
+            padding: 0;
+        }
+
+        p,
+        li {
+            margin-bottom: .2em;
+        }
+
+        main {
+            margin: auto;
+            width: fit-content;
+        }
+
+        h2 {
+            max-width: 300;
+        }
+
+        #input_container,
+        #out,
+        center {
+            margin: auto;
+            display: block;
+        }
+
+        #input_container {
+            position: relative;
+            width: 16em;
+        }
+
+        #colored_in {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+
+        #in {
+            color: rgba(0, 0, 0, 0.2);
+        }
+
+        #in,
+        #colored_in {
+            font-size: 1.5em;
+            width: 100%;
+            border: 2px solid rgba(0, 0, 0, 0.2);
+            margin: 0;
+            margin-bottom: 1em;
+            padding: .3em;
+            border-radius: .2em;
+        }
+
+        #in:hover {
+            border-color: rgba(0, 162, 255, 0.2);
+        }
+
+        #in:focus {
+            border-color: rgb(0, 162, 255);
+            outline: none;
+        }
+
 
         .initial {
             background: rgba(0, 0, 255, 0.3);
@@ -22,13 +88,55 @@
         .special {
             background: red;
         }
+
+        .card {
+            border-radius: .4em;
+            padding: 1em;
+            margin: 1em;
+            box-shadow: 0 0 7px rgba(0, 0, 0, 0.1);
+        }
+
+        .info {
+            background-color: rgb(212, 239, 255);
+        }
+
+        .error {
+            background-color: rgb(255, 184, 184);
+        }
+
+        .ok {
+            background-color: rgb(207, 255, 197);
+        }
+
+        .tips {
+            background-color: rgb(255, 228, 174);
+            color: rgb(78, 58, 16);
+        }
     </style>
 </head>
 
 
 <body>
-    <input type="text" id="in" value="40225798442" />
-    <p id="out" />
+    <main>
+        <h2>Permutaciones de número de cédula: </h2>
+        <div id="input_container">
+            <input type="text" id="in" value="40225798442" placeholder="No. cédula de ±11 digitos." />
+            <span id="colored_in" />
+        </div>
+        <div id="out"></div>
+
+        <div class="card tips">
+            <p>Digitos usualmente confusos:</p>
+            <ul>
+                <li>6 ⟷ 0</li>
+                <li>3 ⟷ 8</li>
+                <li>1 ⟷ 7</li>
+                <li>4 ⟷ 11</li>
+                <li>1 ⟷ 2</li>
+                <li>5 ⟷ 3</li>
+            </ul>
+        </div>
+    </main>
 
     <script>
         function removeInvalidCedChars(ced) {
@@ -69,7 +177,7 @@
 
         function getLuhnCheckDigit(payload) {
             var s = calcLuhn(payload, true)[0];
-            return 10 - (s % 10);
+            return (10 - (s % 10)) % 10;
         }
 
         function cedToHtml(cardNo, specialCharIndex = -1) {
@@ -96,7 +204,7 @@
             return digits.join('');
         }
 
-        function getCedDigit(cardNo, atIndex = -1) {
+        function getLuhnDigit(cardNo, atIndex = -1) {
             if (atIndex < 0 || atIndex >= cardNo.length)
                 atIndex = cardNo.length;
 
@@ -126,15 +234,62 @@
             return digit;
         }
 
-        function getWithValidCedDigit(cardNo, atIndex = -1) {
+        function insertLuhnDigit(cardNo, atIndex = -1) {
             if (!cardNo) return '';
             if (atIndex < 0 || atIndex >= cardNo.length)
                 atIndex = cardNo.length;
 
-            var digit = getCedDigit(cardNo, atIndex);
+            var digit = getLuhnDigit(cardNo, atIndex);
             var out = cardNo.split('');
             out.splice(atIndex, 0, digit.toString())
             return out.join('');
+        }
+
+        function createElement(tag, inner, classes, props) {
+            const obj = document.createElement(tag);
+
+            // append content, if any
+            if (inner) {
+                if (typeof inner == "string")
+                    obj.innerHTML = inner;
+                else
+                    obj.append(inner); // Can be text, number, or another HTMLElement
+            }
+
+            // append classes
+            if (classes) {
+                if (typeof classes == "string") {
+                    obj.classList.add(classes);
+                } else if (typeof classes == "object" && Array.isArray(classes)) {
+                    obj.classList.add(...classes);
+                }
+            }
+
+            // append props, if any
+            if (typeof props == "object") {
+                for (let [key, val] of Object.entries(props)) {
+                    obj[key] = val;
+                }
+            }
+
+            return obj;
+        }
+
+        /** Create <p> element */
+        function cp(t) {
+            const x = document.createElement('p');
+            x.innerHTML = t;
+            return x;
+        }
+
+        function clearNode(node) {
+            while (node.firstChild)
+                node.firstChild.remove();
+        }
+
+        /** Generates a number between 0(inclusive) and <max>(exclusive) */
+        function randInt(n) {
+            return Math.floor(Math.random() * n)
         }
     </script>
 
@@ -143,79 +298,153 @@
 
         nodes = {
             input: document.getElementById('in'),
+            formatted_in: document.getElementById('colored_in'),
             output: document.getElementById('out'),
         }
 
         function onCedChange(e) {
-            let t = [];
             let input = nodes.input.value
             let ced = removeInvalidCedChars(input)
+            const frag = document.createDocumentFragment()
+            const info = createElement('div', null, ['card', 'info'])
+            frag.append(info)
 
+            nodes.formatted_in.innerHTML = cedToHtml(ced)
 
-            t.push(cedToHtml(ced))
-
+            var t = []
             let isValid = checkLuhn(ced)
-            t.push(isValid ? 'OK' : 'INVALID!!')
-            t.push('')
+            info.append(cp(`Len: ${ced.length}/11`))
+            info.append(cp(isValid ? '✔ Cedula OK' : '❌ Cedula INVALIDA!'))
+            if (isValid && ced.length == 11)
+                info.classList.add('ok')
 
             // Status report
-            t.push(`Length: ${ced.length}/11`)
             let prechk = getLuhnCheckDigit(ced.slice(0, -1))
-            t.push(`Checksum digit: ${prechk}`)
-            t.push('')
+            info.append(cp(`Checksum digit: ${prechk}`))
 
-            if (ced.length < 11)
-                t.push('INCOMPLETE!')
 
             // Try to change different digits
             if (ced.length == 11 && !isValid) {
-                t.push('Try these changes: ')
+                const nc = createElement('div', null, 'card')
+                frag.append(nc)
+                nc.append(cp('Intente cambiando...'))
+
+                // Generate matches
                 let list = []
                 let previous = ''
                 for (let i = 0; i < 11; i++) {
                     let slicedCed = ced.slice(0, i) + ced.slice(i + 1)
-                    let newCed = getWithValidCedDigit(slicedCed, i)
+                    let newCed = insertLuhnDigit(slicedCed, i)
                     if (newCed !== previous) {
                         list.push(cedToHtml(newCed, i))
                         previous = newCed
                     }
                 }
 
-                let o = list.map(x => `<li>${x}</li>`).join('')
-                t.push('<ol>' + o + '</ol>')
+                // Print nodes to output
+                const listNode = document.createElement('ol')
+                list.forEach(x => {
+                    listNode.append(createElement('li', x))
+                })
+                nc.append(listNode)
             }
 
-            if (ced.length == 10 && !isValid) {
-                t.push('Try adding a digit: ')
+            // Add a digit
+            if (ced.length == 10) {
+                const nc = createElement('div', null, 'card')
+                frag.append(nc)
+                nc.append(cp('Intente agregar un digito: '))
+
+                // Generate matches
                 let list = []
                 let previous = ''
                 for (let i = 0; i < 11; i++) {
-                    let newCed = getWithValidCedDigit(ced, i)
+                    let newCed = insertLuhnDigit(ced, i)
                     if (newCed !== previous) {
                         list.push(cedToHtml(newCed, i))
                         previous = newCed
                     }
                 }
 
-                let o = list.map(x => `<li>${x}</li>`).join('')
-                t.push('<ol>' + o + '</ol>')
+                // Print nodes to output
+                const listNode = document.createElement('ol')
+                list.forEach(x => {
+                    listNode.append(createElement('li', x))
+                })
+                nc.append(listNode)
+            }
+
+            // Remove a digit
+            if (ced.length == 12) {
+                // Generate matches
+                let list = []
+                for (let i = 0; i < 12; i++) {
+                    let slicedCed = ced.slice(0, i) + ced.slice(i + 1)
+                    let newCed = checkLuhn(slicedCed)
+                    if (checkLuhn(slicedCed)) {
+                        list.push(cedToHtml(slicedCed, i))
+                    }
+                }
+
+                // Print nodes to output
+                const nc = createElement('div', null, 'card')
+                frag.append(nc)
+                if (list.length) {
+                    nc.append(cp('Intente remover un digito:'))
+
+                    const listNode = document.createElement('ol')
+                    list.forEach(x => {
+                        listNode.append(createElement('li', x))
+                    })
+                    nc.append(listNode)
+                } else {
+                    nc.append(cp('Demasiados digitos!'))
+                    nc.append(cp('Remover alguno no valida ninguno.'))
+                }
+            }
+
+            if (ced.length < 10) {
+                const msg = 'Muy pocos digitos!'
+                const nc = createElement('div', msg, ['card', 'error'])
+                frag.append(nc)
+            }
+
+            if (ced.length > 12) {
+                const msg = 'Demasiados digitos!'
+                const nc = createElement('div', msg, ['card', 'error'])
+                frag.append(nc)
             }
 
 
 
 
-            nodes.output.innerHTML = t.join('<br>')
+            clearNode(nodes.output)
+            nodes.output.append(frag)
         }
 
 
-        let elems = ['change', 'input']
-        elems.forEach((x) => {
-            nodes.input.addEventListener(x, onCedChange)
-        })
-
-        onCedChange(null)
 
 
+
+        {
+            // Generate random initial value
+            const INITIAL_CODES = ['402', '001', '004', '073', '074', '054']
+            let initialValue = INITIAL_CODES[Math.floor(Math.random() * INITIAL_CODES.length)]
+
+            const amountOfDigits = 7 + randInt(3)
+            for (let i = amountOfDigits; i; i--)
+                initialValue += randInt(10).toString()
+            nodes.input.value = initialValue
+
+            // Attach event handlers
+            let elems = ['change', 'input']
+            elems.forEach((x) => {
+                nodes.input.addEventListener(x, onCedChange)
+            })
+
+            // Initial verify
+            onCedChange(null)
+        }
     </script>
 </body>
 
