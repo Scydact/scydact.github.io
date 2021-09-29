@@ -378,11 +378,13 @@
             if (ced.length == 12) {
                 // Generate matches
                 let list = []
+                let previous = ''
                 for (let i = 0; i < 12; i++) {
                     let slicedCed = ced.slice(0, i) + ced.slice(i + 1)
                     let newCed = checkLuhn(slicedCed)
-                    if (checkLuhn(slicedCed)) {
+                    if (newCed !== previous && checkLuhn(slicedCed)) {
                         list.push(cedToHtml(slicedCed, i))
+                        previous = newCed
                     }
                 }
 
