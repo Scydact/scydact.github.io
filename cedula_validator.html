@@ -75,7 +75,7 @@
         }
 
         .copy-to-clip {
-            margin-left: .5em;
+            margin-right: .5em;
             padding: 0;
             border: 2px solid rgba(0, 0, 0, 0.2);
             border-radius: .2em;
@@ -99,14 +99,16 @@
             background: red;
         }
 
-        .card {
+        .card,
+        .popup {
             border-radius: .4em;
             padding: 1em;
             margin: 1em;
             box-shadow: 0 0 7px rgba(0, 0, 0, 0.1);
         }
 
-        .info {
+        .info,
+        .popup {
             background-color: rgb(212, 239, 255);
         }
 
@@ -121,6 +123,17 @@
         .tips {
             background-color: rgb(255, 228, 174);
             color: rgb(78, 58, 16);
+        }
+
+        #popup-container {
+            position: fixed;
+            top: 0;
+            right: 0;
+        }
+
+        .popup {
+            max-width: 200px;
+            transition: position 2s ease;
         }
     </style>
 </head>
@@ -145,6 +158,10 @@
                 <li>1 ⟷ 2</li>
                 <li>5 ⟷ 3</li>
             </ul>
+        </div>
+
+        <div id="popup-container">
+
         </div>
     </main>
 
@@ -201,13 +218,19 @@
             if (specialCharIndex >= 0)
                 ranges.push(['special', [specialCharIndex, specialCharIndex + 1]]);
 
-            var digits = cardNo.split('').map((c, i) => {
+            var index = 0;
+            var digits = cardNo.split('').map((c) => {
+                // Not a digit
+                if (!('0' <= c && c <= '9'))
+                    return c;
+
+                // Its a digit!
                 var classes = [];
                 ranges.forEach(([className, range]) => {
-                    if (range[0] <= i && i < range[1])
+                    if (range[0] <= index && index < range[1])
                         classes.push(className);
                 })
-
+                index++;
                 return `<span class="${classes.join(' ')}">${c}</span>`;
             })
 
@@ -292,10 +315,12 @@
             return x;
         }
 
+        // unused
         function createCopyBtn(text) {
             const x = createElement('input', null, ['btn', 'copy-to-clip'],
                 { 'value': '📋', 'title': 'Copiar a portapapeles.', 'type': 'button' });
-            x.addEventListener('click', () => navigator.clipboard.writeText(text));
+            const fn = () => navigator.clipboard.writeText(text)
+            x.addEventListener('click', fn);
             return x;
         }
 
@@ -304,9 +329,37 @@
                 node.firstChild.remove();
         }
 
+        function createCedList(htmlList) {
+            const listNode = document.createElement('ol');
+            htmlList.forEach((x, i) => {
+                const li = createElement('li', x);
+                const txt = li.textContent;
+                const fn = () => {
+                    navigator.clipboard.writeText(txt);
+                    createPopup(`Copiada la cedula #${i + 1} (${txt}) al portapapeles.`)
+                }
+                li.addEventListener('click', fn);
+                //li.prepend(createCopyBtn(textList[i]));
+                listNode.append(li);
+            })
+            return listNode;
+        }
+
         /** Generates a number between 0(inclusive) and <max>(exclusive) */
         function randInt(n) {
             return Math.floor(Math.random() * n)
+        }
+
+        function createPopup(text, duration = 1000) {
+            const x = createElement('div', text, ['popup']);
+            const y = document.getElementById('popup-container');
+            if (!y) return;
+
+            y.append(x);
+
+            setTimeout(() => {
+                x.remove()
+            }, duration)
         }
     </script>
 
@@ -326,7 +379,7 @@
             const info = createElement('div', null, ['card', 'info'])
             frag.append(info)
 
-            nodes.formatted_in.innerHTML = cedToHtml(ced)
+            nodes.formatted_in.innerHTML = cedToHtml(input)
 
             var t = []
             let isValid = checkLuhn(ced)
@@ -339,7 +392,6 @@
             let prechk = getLuhnCheckDigit(ced.slice(0, -1))
             info.append(cp(`Checksum digit: ${prechk}`))
 
-
             // Try to change different digits
             if (ced.length == 11 && !isValid) {
                 const nc = createElement('div', null, 'card')
@@ -348,26 +400,18 @@
 
                 // Generate matches
                 let list = []
-                let cedList = []
                 let previous = ''
                 for (let i = 0; i < 11; i++) {
                     let slicedCed = ced.slice(0, i) + ced.slice(i + 1)
                     let newCed = insertLuhnDigit(slicedCed, i)
                     if (newCed !== previous) {
                         list.push(cedToHtml(newCed, i))
-                        cedList.push(newCed)
                         previous = newCed
                     }
                 }
 
                 // Print nodes to output
-                const listNode = document.createElement('ol')
-                list.forEach((x, i) => {
-                    const li = createElement('li', x)
-                    li.append(createCopyBtn(cedList[i]))
-                    listNode.append(li)
-                })
-                nc.append(listNode)
+                nc.append(createCedList(list))
             }
 
             // Add a digit
@@ -378,39 +422,29 @@
 
                 // Generate matches
                 let list = []
-                let cedList = []
                 let previous = ''
                 for (let i = 0; i < 11; i++) {
                     let newCed = insertLuhnDigit(ced, i)
                     if (newCed !== previous) {
                         list.push(cedToHtml(newCed, i))
-                        cedList.push(newCed)
                         previous = newCed
                     }
                 }
 
                 // Print nodes to output
-                const listNode = document.createElement('ol')
-                list.forEach((x, i) => {
-                    const li = createElement('li', x)
-                    li.append(createCopyBtn(cedList[i]))
-                    listNode.append(li)
-                })
-                nc.append(listNode)
+                nc.append(createCedList(list))
             }
 
             // Remove a digit
             if (ced.length == 12) {
                 // Generate matches
                 let list = []
-                let cedList = []
                 let previous = ''
                 for (let i = 0; i < 12; i++) {
                     let slicedCed = ced.slice(0, i) + ced.slice(i + 1)
                     let newCed = checkLuhn(slicedCed)
                     if (newCed !== previous && checkLuhn(slicedCed)) {
                         list.push(cedToHtml(slicedCed, i))
-                        cedList.push(newCed)
                         previous = newCed
                     }
                 }
@@ -420,14 +454,7 @@
                 frag.append(nc)
                 if (list.length) {
                     nc.append(cp('Intente remover un digito:'))
-
-                    const listNode = document.createElement('ol')
-                    list.forEach((x, i) => {
-                        const li = createElement('li', x)
-                        li.append(createCopyBtn(cedList[i]))
-                        listNode.append(li)
-                    })
-                    nc.append(listNode)
+                    nc.append(createCedList(list))
                 } else {
                     nc.append(cp('Demasiados digitos!'))
                     nc.append(cp('Remover alguno no valida ninguno.'))
@@ -445,8 +472,6 @@
                 const nc = createElement('div', msg, ['card', 'error'])
                 frag.append(nc)
             }
-
-
 
 
             clearNode(nodes.output)
