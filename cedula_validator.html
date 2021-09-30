@@ -63,15 +63,25 @@
             border-radius: .2em;
         }
 
-        #in:hover {
+        #in:hover,
+        .copy-to-clip:hover {
             border-color: rgba(0, 162, 255, 0.2);
         }
 
-        #in:focus {
+        #in:focus,
+        .copy-to-clip:focus {
             border-color: rgb(0, 162, 255);
             outline: none;
         }
 
+        .copy-to-clip {
+            margin-left: .5em;
+            padding: 0;
+            border: 2px solid rgba(0, 0, 0, 0.2);
+            border-radius: .2em;
+            width: 1.6em;
+            height: 1.6em;
+        }
 
         .initial {
             background: rgba(0, 0, 255, 0.3);
@@ -282,6 +292,13 @@
             return x;
         }
 
+        function createCopyBtn(text) {
+            const x = createElement('input', null, ['btn', 'copy-to-clip'],
+                { 'value': '📋', 'title': 'Copiar a portapapeles.', 'type': 'button' });
+            x.addEventListener('click', () => navigator.clipboard.writeText(text));
+            return x;
+        }
+
         function clearNode(node) {
             while (node.firstChild)
                 node.firstChild.remove();
@@ -331,20 +348,24 @@
 
                 // Generate matches
                 let list = []
+                let cedList = []
                 let previous = ''
                 for (let i = 0; i < 11; i++) {
                     let slicedCed = ced.slice(0, i) + ced.slice(i + 1)
                     let newCed = insertLuhnDigit(slicedCed, i)
                     if (newCed !== previous) {
                         list.push(cedToHtml(newCed, i))
+                        cedList.push(newCed)
                         previous = newCed
                     }
                 }
 
                 // Print nodes to output
                 const listNode = document.createElement('ol')
-                list.forEach(x => {
-                    listNode.append(createElement('li', x))
+                list.forEach((x, i) => {
+                    const li = createElement('li', x)
+                    li.append(createCopyBtn(cedList[i]))
+                    listNode.append(li)
                 })
                 nc.append(listNode)
             }
@@ -357,19 +378,23 @@
 
                 // Generate matches
                 let list = []
+                let cedList = []
                 let previous = ''
                 for (let i = 0; i < 11; i++) {
                     let newCed = insertLuhnDigit(ced, i)
                     if (newCed !== previous) {
                         list.push(cedToHtml(newCed, i))
+                        cedList.push(newCed)
                         previous = newCed
                     }
                 }
 
                 // Print nodes to output
                 const listNode = document.createElement('ol')
-                list.forEach(x => {
-                    listNode.append(createElement('li', x))
+                list.forEach((x, i) => {
+                    const li = createElement('li', x)
+                    li.append(createCopyBtn(cedList[i]))
+                    listNode.append(li)
                 })
                 nc.append(listNode)
             }
@@ -378,12 +403,14 @@
             if (ced.length == 12) {
                 // Generate matches
                 let list = []
+                let cedList = []
                 let previous = ''
                 for (let i = 0; i < 12; i++) {
                     let slicedCed = ced.slice(0, i) + ced.slice(i + 1)
                     let newCed = checkLuhn(slicedCed)
                     if (newCed !== previous && checkLuhn(slicedCed)) {
                         list.push(cedToHtml(slicedCed, i))
+                        cedList.push(newCed)
                         previous = newCed
                     }
                 }
@@ -395,8 +422,10 @@
                     nc.append(cp('Intente remover un digito:'))
 
                     const listNode = document.createElement('ol')
-                    list.forEach(x => {
-                        listNode.append(createElement('li', x))
+                    list.forEach((x, i) => {
+                        const li = createElement('li', x)
+                        li.append(createCopyBtn(cedList[i]))
+                        listNode.append(li)
                     })
                     nc.append(listNode)
                 } else {
