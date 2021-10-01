@@ -20,7 +20,7 @@
             margin-bottom: .2em;
         }
 
-        li:nth-child(3n) {
+        #out li:nth-child(3n) {
             margin-bottom: 1em;
         }
 
@@ -157,15 +157,24 @@
         <div id="out"></div>
 
         <div class="card tips">
-            <p>Digitos usualmente confusos (marcados con ⭐):</p>
+            <h2>Tips</h2>
             <ul>
-                <li>6 ⟷ 0</li>
-                <li>3 ⟷ 8</li>
-                <li>1 ⟷ 7</li>
-                <li>4 ⟷ 11</li>
-                <li>1 ⟷ 2</li>
-                <li>5 ⟷ 3</li>
+                <li>Empieze reemplazando desde la última permutación hasta la primera.</li>
+
+                <li>
+                    Digitos usualmente confusos (marcados con ⭐ si hay):
+                    <ul>
+                        <li>6 ⟷ 0</li>
+                        <li>3 ⟷ 8</li>
+                        <li>1 ⟷ 7</li>
+                        <li>4 ⟷ 11</li>
+                        <li>1 ⟷ 2</li>
+                        <li>5 ⟷ 3</li>
+                        <li>4 ⟷ 9</li>
+                    </ul>
+                </li>
             </ul>
+
         </div>
 
         <div id="popup-container">
@@ -384,12 +393,14 @@
                 ['1', '7'],
                 ['1', '2'],
                 ['5', '3'],
+                ['4', '9'],
             ]
+
+            console.log(a, b)
 
             if (a == b) return false;
 
-            for (let n_case in SIMILAR_CASES) {
-                let [x, y] = n_case;
+            for (let [x, y] of SIMILAR_CASES) {
                 if ((x == a && y == b) || (x == b && y == a))
                     return true;
             }
@@ -442,9 +453,12 @@
                     let newCed = insertLuhnDigit(slicedCed, i)
                     if (newCed !== previous) {
                         list.push(cedToHtml(newCed, i))
-                        const a = slicedCed[i]
+                        const a = ced[i]
                         const b = newCed[i]
-                        starred.push(isSimilarDigit(a, b))
+                        console.log(slicedCed, newCed)
+                        const xxx = isSimilarDigit(a, b)
+                        starred.push(xxx)
+                        console.log(xxx)
                         previous = newCed
                     }
                 }
