@@ -20,6 +20,10 @@
             margin-bottom: .2em;
         }
 
+        li:nth-child(3n) {
+            margin-bottom: 1em;
+        }
+
         main {
             margin: auto;
             width: fit-content;
@@ -135,6 +139,10 @@
             max-width: 200px;
             transition: position 2s ease;
         }
+
+        .highlight {
+            box-shadow: 0 0 0px 2px #ffa601;
+        }
     </style>
 </head>
 
@@ -149,7 +157,7 @@
         <div id="out"></div>
 
         <div class="card tips">
-            <p>Digitos usualmente confusos:</p>
+            <p>Digitos usualmente confusos (marcados con ⭐):</p>
             <ul>
                 <li>6 ⟷ 0</li>
                 <li>3 ⟷ 8</li>
@@ -329,14 +337,21 @@
                 node.firstChild.remove();
         }
 
-        function createCedList(htmlList) {
+        function createCedList(htmlList, starredList) {
             const listNode = document.createElement('ol');
             htmlList.forEach((x, i) => {
                 const li = createElement('li', x);
                 const txt = li.textContent;
+                if (starredList && starredList[i])
+                    li.innerHTML += ' ⭐'
                 const fn = () => {
                     navigator.clipboard.writeText(txt);
                     createPopup(`Copiada la cedula #${i + 1} (${txt}) al portapapeles.`)
+
+                    while (document.getElementsByClassName('highlight').length)
+                        document.getElementsByClassName('highlight')[0].classList.remove('highlight')
+
+                    li.classList.add('highlight')
                 }
                 li.addEventListener('click', fn);
                 //li.prepend(createCopyBtn(textList[i]));
@@ -360,6 +375,25 @@
             setTimeout(() => {
                 x.remove()
             }, duration)
+        }
+
+        function isSimilarDigit(a, b) {
+            const SIMILAR_CASES = [
+                [6, 0],
+                [3, 8],
+                [1, 7],
+                [1, 2],
+                [5, 3],
+            ]
+
+            if (a == b) return false;
+
+            for (let [x, y] in SIMILAR_CASES) {
+                if ((x == a && y == b) || (x == b && y == a))
+                    return true;
+            }
+
+            return false;
         }
     </script>
 
@@ -400,18 +434,22 @@
 
                 // Generate matches
                 let list = []
+                let starred = []
                 let previous = ''
                 for (let i = 0; i < 11; i++) {
                     let slicedCed = ced.slice(0, i) + ced.slice(i + 1)
                     let newCed = insertLuhnDigit(slicedCed, i)
                     if (newCed !== previous) {
                         list.push(cedToHtml(newCed, i))
+                        const a = slicedCed[i]
+                        const b = newCed[i]
+                        starred.push(isSimilarDigit(a, b))
                         previous = newCed
                     }
                 }
 
                 // Print nodes to output
-                nc.append(createCedList(list))
+                nc.append(createCedList(list, starred))
             }
 
             // Add a digit
