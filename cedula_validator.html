@@ -349,24 +349,29 @@
         function createCedList(htmlList, starredList) {
             const listNode = document.createElement('ol');
             htmlList.forEach((x, i) => {
-                const li = createElement('li', x);
-                const txt = li.textContent;
-                if (starredList && starredList[i])
-                    li.innerHTML += ' ⭐'
-                const fn = () => {
-                    navigator.clipboard.writeText(txt);
-                    createPopup(`Copiada la cedula #${i + 1} (${txt}) al portapapeles.`)
-
-                    while (document.getElementsByClassName('highlight').length)
-                        document.getElementsByClassName('highlight')[0].classList.remove('highlight')
-
-                    li.classList.add('highlight')
-                }
-                li.addEventListener('click', fn);
-                //li.prepend(createCopyBtn(textList[i]));
+                const isStarred = (starredList && starredList[i])
+                const li = createSingleCed(x, i, isStarred)
                 listNode.append(li);
             })
             return listNode;
+        }
+
+        function createSingleCed(html, index, isStarred) {
+            const li = createElement('li', html);
+            const txt = li.textContent;
+            if (isStarred)
+                li.innerHTML += ' ⭐'
+            const fn = () => {
+                navigator.clipboard.writeText(txt)
+                createPopup(`Copiada la cedula #${index + 1} (${txt}) al portapapeles.`)
+
+                while (document.getElementsByClassName('highlight').length)
+                    document.getElementsByClassName('highlight')[0].classList.remove('highlight')
+
+                li.classList.add('highlight')
+            }
+            li.addEventListener('click', fn)
+            return li
         }
 
         /** Generates a number between 0(inclusive) and <max>(exclusive) */
@@ -395,8 +400,6 @@
                 ['5', '3'],
                 ['4', '9'],
             ]
-
-            console.log(a, b)
 
             if (a == b) return false;
 
@@ -455,10 +458,8 @@
                         list.push(cedToHtml(newCed, i))
                         const a = ced[i]
                         const b = newCed[i]
-                        console.log(slicedCed, newCed)
                         const xxx = isSimilarDigit(a, b)
                         starred.push(xxx)
-                        console.log(xxx)
                         previous = newCed
                     }
                 }
